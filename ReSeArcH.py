@@ -52,6 +52,11 @@ st.markdown("""
         background: transparent !important;
     }
     
+    /* Make the main app header transparent */
+    [data-testid="stHeader"] {
+        background: transparent !important;
+    }
+
     /* --- BOHRIUM GREEN/GOLD THEME --- */
 
     /* General Text Color */
