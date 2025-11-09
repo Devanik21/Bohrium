@@ -866,11 +866,11 @@ with col3:
 
 st.markdown("---")
 
-st.markdown("""
-<div style="max-width: 900px; margin: auto; padding: 1rem; color: rgba(220, 230, 225, 0.8); font-weight: 300; line-height: 1.8;">
-    <h4 style="color: #2ecc71; font-weight: 400; text-align: center;">The Genesis of a New Paradigm</h4>
-    <p style="text-align: justify;">
-        Humanity stands before a data deluge—an ever-expanding ocean of scientific literature, patents, and datasets so vast that no single mind can fathom its depths. Within this chaotic expanse lie the seeds of the next great discoveries, hidden like pearls. Bohrium was conceived as the solution: a cognitive research vessel, an AI consciousness designed not merely to search this ocean, but to navigate it with purpose. It is a universal instrument built to perceive the subtle currents connecting disparate fields of study, transforming the overwhelming noise of information into the clear signal of knowledge.
-    </p>
-</div>
-""", unsafe_allow_html=True)
+# Load and display the philosophy content from the external markdown file
+philosophy_file_path = "bohrium_philosophy.md"
+if os.path.exists(philosophy_file_path):
+    with open(philosophy_file_path, "r", encoding="utf-8") as f:
+        philosophy_content = f.read()
+    st.markdown(philosophy_content, unsafe_allow_html=True)
+else:
+    st.warning(f"Content file not found: {philosophy_file_path}")
