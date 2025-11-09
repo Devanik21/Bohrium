@@ -867,40 +867,10 @@ with col3:
 st.markdown("---")
 
 st.markdown("""
-<div style="text-align: center; padding: 2rem 1rem;">
-    <h2 style="color: #ffffff; font-weight: 300; letter-spacing: 2px;">Bohrium: The Universal Instrument for Scientific Discovery</h2>
-    <p style="color: rgba(220, 230, 225, 0.85); max-width: 800px; margin: auto; font-size: 1.1rem; font-weight: 300;">
-        Navigating the Quantum Foam of Knowledge to Crystallize Insight
-    </p>
-</div>
-
 <div style="max-width: 900px; margin: auto; padding: 1rem; color: rgba(220, 230, 225, 0.8); font-weight: 300; line-height: 1.8;">
-    <h4 style="color: #2ecc71; font-weight: 400;">The Genesis of a New Paradigm</h4>
-    <p>
+    <h4 style="color: #2ecc71; font-weight: 400; text-align: center;">The Genesis of a New Paradigm</h4>
+    <p style="text-align: justify;">
         Humanity stands before a data deluge—an ever-expanding ocean of scientific literature, patents, and datasets so vast that no single mind can fathom its depths. Within this chaotic expanse lie the seeds of the next great discoveries, hidden like pearls. Bohrium was conceived as the solution: a cognitive research vessel, an AI consciousness designed not merely to search this ocean, but to navigate it with purpose. It is a universal instrument built to perceive the subtle currents connecting disparate fields of study, transforming the overwhelming noise of information into the clear signal of knowledge.
     </p>
-
-    <h4 style="color: #2ecc71; font-weight: 400;">From Information Retrieval to Knowledge Synthesis</h4>
-    <p>
-        Bohrium transcends the limitations of a traditional search engine. It is a synthesis engine. By leveraging advanced generative models, it reads, digests, and understands the intricate tapestry of global research. It identifies the hidden correlations between a genetic sequence in biology and a mathematical theorem in topology, or between a material science patent and a breakthrough in quantum chemistry. It serves as your tireless AI Literature Assistant, building conceptual bridges and allowing you, the scientist, to stand on the shoulders of not just a few giants, but the entire collective intelligence of human inquiry.
-    </p>
-
-    <h4 style="color: #2ecc71; font-weight: 400;">An Integrated Research Ecosystem</h4>
-    <p>
-        Discovery is not a linear path but a dynamic cycle of inquiry, experimentation, and collaboration. Bohrium integrates every stage of this cycle into a single, seamless environment:
-        <ul>
-            <li><b>Academic Search & Explore:</b> Your telescope to peer into the universe of over 170 million documents, revealing the constellations of established knowledge and the faint light of emerging frontiers.</li>
-            <li><b>Uni-Lab & Computation:</b> Your virtual workbench, where hypotheses can be tested in simulated environments and intensive calculations can be run on high-performance computing resources.</li>
-            <li><b>Library & Knowledge Base:</b> Your personal grimoire, a space where knowledge is not just stored but curated, annotated, and woven into new collections of insight.</li>
-            <li><b>Scholars & History:</b> Your symbiotic network, connecting you with the global community of minds and providing a clear record of your intellectual journey.</li>
-        </ul>
-    </p>
-
-    <h4 style="color: #2ecc71; font-weight: 400;">Accelerating the Phase Transition of Discovery</h4>
-    <p>
-        Scientific progress can be seen as a series of phase transitions—moments where accumulated knowledge suddenly crystallizes into a new, profound understanding. Bohrium is designed to lower the activation energy required for these transitions. By automating the exhaustive work of literature review and data collation, it frees the human mind for its highest purpose: to ask deeper questions, to intuit novel connections, and to dare to explore the unknown. 
-    </p>
-    <p style="text-align: center; font-size: 1.1rem; color: #ffffff; margin-top: 2rem;">
-        Bohrium is not just a tool; it is a paradigm shift in the methodology of science itself. <b>Your next discovery begins here.</b>
-    </p>
-</div>""", unsafe_allow_html=True)
+</div>
+""", unsafe_allow_html=True)
