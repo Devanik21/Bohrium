@@ -115,17 +115,18 @@ st.markdown("""
     /* Main Action Buttons */
     .stButton > button {
         border-radius: 25px;
-        background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%); /* Green gradient */
-        color: white;
-        border: none;
+        background: transparent !important;
+        border: 1px solid rgba(46, 204, 113, 0.7) !important;
+        color: rgba(240, 240, 240, 0.9) !important;
         padding: 10px 30px;
         font-weight: bold;
         transition: all 0.3s ease;
     }
     
     .stButton > button:hover {
-        background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
-        box-shadow: 0 2px 10px rgba(46, 204, 113, 0.4);
+        background: rgba(46, 204, 113, 0.15) !important; /* Subtle green glow on hover */
+        border-color: rgba(46, 204, 113, 1) !important;
+        color: #ffffff !important;
     }
     
     /* Selectbox */
