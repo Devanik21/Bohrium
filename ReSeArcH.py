@@ -16,12 +16,16 @@ st.markdown("""
 <style>
     /* Main container styling */
     .main {
-        background-color: #f5f7fa;
+        background-color: #0e1117;
     }
     
     /* Sidebar styling */
     [data-testid="stSidebar"] {
-        background-color: #e8eaf6;
+        background-color: #1e1e2e;
+    }
+    
+    [data-testid="stSidebar"] > div:first-child {
+        background-color: #1e1e2e;
     }
     
     /* Header styling */
