@@ -198,7 +198,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Set the background image
-image_path = "luxury-plain-green-gradient-abstract-studio-background-empty-room-with-space-your-text-picture.jpg"
+image_path = "green-gradient-abstract-background-empty-room-with-space-your-text-picture.jpg"
 set_app_background(image_path)
 
 # Initialize session state
