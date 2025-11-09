@@ -2,6 +2,7 @@ import streamlit as st
 import google.generativeai as genai
 from datetime import datetime
 import json
+from tinydb import TinyDB, Query
 
 # Page configuration
 st.set_page_config(
@@ -175,20 +176,50 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Initialize session state
-if 'chat_history' not in st.session_state:
-    st.session_state.chat_history = []
-if 'current_tool' not in st.session_state:
-    st.session_state.current_tool = 'Science Navigator'
-if 'library' not in st.session_state:
-    st.session_state.library = []
-if 'search_history' not in st.session_state:
-    st.session_state.search_history = []
-if 'collections' not in st.session_state:
-    st.session_state.collections = []
-if 'reading_list' not in st.session_state:
-    st.session_state.reading_list = []
-if 'notes' not in st.session_state:
-    st.session_state.notes = []
+if 'state_loaded' not in st.session_state:
+    # --- Database Setup for Persistence ---
+    db = TinyDB('bohrium_db.json')
+    user_data_table = db.table('user_data')
+
+    # Load previous state if available
+    saved_data = user_data_table.get(doc_id=1)
+    if saved_data:
+        st.session_state.chat_history = saved_data.get('chat_history', [])
+        st.session_state.current_tool = saved_data.get('current_tool', 'Science Navigator')
+        st.session_state.library = saved_data.get('library', [])
+        st.session_state.search_history = saved_data.get('search_history', [])
+        st.session_state.collections = saved_data.get('collections', [])
+        st.session_state.reading_list = saved_data.get('reading_list', [])
+        st.session_state.notes = saved_data.get('notes', [])
+        st.toast("Loaded saved session data.", icon="💾")
+    else:
+        # Initialize if no saved data
+        st.session_state.chat_history = []
+        st.session_state.current_tool = 'Science Navigator'
+        st.session_state.library = []
+        st.session_state.search_history = []
+        st.session_state.collections = []
+        st.session_state.reading_list = []
+        st.session_state.notes = []
+
+    st.session_state.state_loaded = True
+
+# Function to save state to TinyDB
+def save_state():
+    """Saves the current session state to the database."""
+    db = TinyDB('bohrium_db.json')
+    user_data_table = db.table('user_data')
+    current_state = {
+        'chat_history': st.session_state.chat_history,
+        'current_tool': st.session_state.current_tool,
+        'library': st.session_state.library,
+        'search_history': st.session_state.search_history,
+        'collections': st.session_state.collections,
+        'reading_list': st.session_state.reading_list,
+        'notes': st.session_state.notes,
+    }
+    user_data_table.upsert(current_state, doc_id=1)
+    st.toast("Progress saved!", icon="💾")
 
 # Configure Gemini API
 try:
@@ -196,6 +227,34 @@ try:
     model = genai.GenerativeModel('gemini-2.0-flash-exp')
 except Exception as e:
     st.error("⚠️ Please configure GEMINI_API_KEY in Streamlit secrets")
+
+# --- Password Protection ---
+def check_password():
+    """Returns `True` if the user has the correct password."""
+
+    def password_entered():
+        """Checks whether a password entered by the user is correct."""
+        if st.session_state["password"] == st.secrets["password"]:
+            st.session_state["password_correct"] = True
+            del st.session_state["password"]  # don't store password
+        else:
+            st.session_state["password_correct"] = False
+
+    if "password_correct" not in st.session_state:
+        # First run, show input for password.
+        st.text_input("Password", type="password", on_change=password_entered, key="password")
+        return False
+    elif not st.session_state["password_correct"]:
+        # Password not correct, show input + error.
+        st.text_input("Password", type="password", on_change=password_entered, key="password")
+        st.error("Password incorrect")
+        return False
+    else:
+        # Password correct.
+        return True
+
+if not check_password():
+    st.stop()  # Do not continue if check_password is not True.
 
 # Sidebar Navigation
 with st.sidebar:
@@ -222,6 +281,7 @@ with st.sidebar:
     for label, key in menu_items.items():
         if st.button(label, key=key, use_container_width=True):
             st.session_state.current_tool = label
+            save_state()
     
     st.markdown("---")
     
@@ -285,6 +345,7 @@ if st.session_state.current_tool in ["🆕 New Chat", "Science Navigator"]:
                 "query": user_query,
                 "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             })
+            save_state()
             
             # Generate response using Gemini
             with st.spinner("🔍 Searching scientific literature..."):
@@ -308,6 +369,7 @@ Provide a comprehensive, scientifically accurate answer."""
                         "response": response.text,
                         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     })
+                    save_state()
                     
                 except Exception as e:
                     st.error(f"Error generating response: {str(e)}")
@@ -392,6 +454,7 @@ elif st.session_state.current_tool == "📚 Library":
                     with col2:
                         if st.button("🗑️ Remove", key=f"remove_{idx}"):
                             st.session_state.library.pop(idx)
+                            save_state()
                             st.rerun()
         else:
             st.info("Your library is empty. Start saving papers from your searches!")
@@ -404,6 +467,7 @@ elif st.session_state.current_tool == "📚 Library":
                     "authors": "Smith et al.",
                     "journal": "Nature"
                 })
+                save_state()
                 st.rerun()
     
     with tabs[1]:
@@ -421,6 +485,7 @@ elif st.session_state.current_tool == "📚 Library":
                         "created": datetime.now().strftime("%Y-%m-%d"),
                         "papers": []
                     })
+                    save_state()
                     st.success(f"Collection '{collection_name}' created!")
         
         # Display existing collections
@@ -431,6 +496,7 @@ elif st.session_state.current_tool == "📚 Library":
                     st.caption(f"Created: {collection['created']}")
                     if st.button("🗑️ Delete Collection", key=f"del_col_{idx}"):
                         st.session_state.collections.pop(idx)
+                        save_state()
                         st.rerun()
     
     with tabs[2]:
@@ -448,10 +514,12 @@ elif st.session_state.current_tool == "📚 Library":
                 with col2:
                     if st.button("✅ Done", key=f"done_{idx}"):
                         st.session_state.reading_list.pop(idx)
+                        save_state()
                         st.rerun()
                 with col3:
                     if st.button("🗑️", key=f"remove_reading_{idx}"):
                         st.session_state.reading_list.pop(idx)
+                        save_state()
                         st.rerun()
         else:
             st.info("Add papers to your reading list to track your progress")
@@ -463,6 +531,7 @@ elif st.session_state.current_tool == "📚 Library":
                     "priority": "High",
                     "added": datetime.now().strftime("%Y-%m-%d")
                 })
+                save_state()
                 st.rerun()
     
     with tabs[3]:
@@ -481,6 +550,7 @@ elif st.session_state.current_tool == "📚 Library":
                         "content": note_content,
                         "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     })
+                    save_state()
                     st.success("Note saved!")
                     st.rerun()
         
@@ -493,6 +563,7 @@ elif st.session_state.current_tool == "📚 Library":
                     st.markdown(note.get('content', ''))
                     if st.button("🗑️ Delete", key=f"delete_note_{note_display_idx}"):
                         st.session_state.notes.pop(note_display_idx)
+                        save_state()
                         st.rerun()
 
 elif st.session_state.current_tool == "🎯 Practice":
@@ -687,6 +758,7 @@ elif st.session_state.current_tool == "📊 History":
                 with col3:
                     if st.button("↻", key=f"repeat_{idx}"):
                         st.session_state.current_tool = "Science Navigator"
+                        save_state()
                         st.rerun()
         else:
             st.info("No search history yet")
@@ -749,4 +821,3 @@ with col3:
     st.caption("🌍 Global Research Network")
 
 st.markdown("---")
-st.caption("京公网安备11010802045318号 | 京ICP备20010051号-16 | 营业执照 | 增值电信业务经营许可证B2-20210408 | 网络直播服务 | 网络视听许可证")
