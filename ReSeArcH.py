@@ -305,10 +305,6 @@ if not check_password():
 
 # Sidebar Navigation
 with st.sidebar:
-    st.image("https://via.placeholder.com/150x50/667eea/ffffff?text=Bohrium", width=150)
-    
-    st.markdown("---")
-    
     # Main Navigation
     menu_items = {
         "🆕 New Chat": "new_chat",
