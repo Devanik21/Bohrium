@@ -190,14 +190,14 @@ st.markdown("""
     
     /* Nobel Banner */
     .nobel-banner {
-        background: linear-gradient(135deg, #D4AF37 0%, #FFD700 100%); /* Gold gradient */
+        background: transparent !important;
         padding: 10px;
         border-radius: 8px;
         text-align: center;
         margin-bottom: 20px;
         font-weight: bold;
-        color: #2c3e50; /* Dark text for contrast on gold */
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        color: rgba(240, 240, 240, 0.9) !important; /* Light text for visibility */
+        box-shadow: none !important;
     }
     
     /* Accuracy Badge */
