@@ -44,11 +44,12 @@ st.markdown("""
 <style>
     /* Sidebar styling */
     [data-testid="stSidebar"] {
-        background-color: #1e1e2e;
+        background: transparent !important;
+        backdrop-filter: blur(2px); /* Optional: Adds a slight blur effect */
     }
     
     [data-testid="stSidebar"] > div:first-child {
-        background-color: #1e1e2e;
+        background: transparent !important;
     }
     
     /* Header styling */
@@ -198,7 +199,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Set the background image
-image_path = "green-gradient-abstract-background-empty-room-with-space-your-text-picture.jpg"
+image_path = "luxury-plain-green-gradient-abstract-studio-background-empty-room-with-space-your-text-picture.jpg"
 set_app_background(image_path)
 
 # Initialize session state
