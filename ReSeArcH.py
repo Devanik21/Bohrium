@@ -45,155 +45,166 @@ st.markdown("""
     /* Sidebar styling */
     [data-testid="stSidebar"] {
         background: transparent !important;
-        backdrop-filter: blur(2px); /* Optional: Adds a slight blur effect */
+        backdrop-filter: blur(5px); /* A bit more blur for readability */
     }
     
     [data-testid="stSidebar"] > div:first-child {
         background: transparent !important;
     }
     
-    /* Header styling */
+    /* --- BOHRIUM GREEN/GOLD THEME --- */
+
+    /* General Text Color */
+    .stMarkdown, p, span, div, .stButton>button, .stTabs [data-baseweb="tab"] {
+        color: rgba(240, 240, 240, 0.9) !important;
+    }
+
+    /* Header Container */
     .header-container {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: rgba(10, 25, 20, 0.5); /* Semi-transparent dark green */
+        backdrop-filter: blur(10px);
         padding: 20px;
         border-radius: 10px;
         text-align: center;
         margin-bottom: 30px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(46, 204, 113, 0.2);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
     }
     
     .header-title {
-        color: white;
+        color: #ffffff;
         font-size: 42px;
         font-weight: bold;
         margin: 0;
     }
     
     .header-subtitle {
-        color: #e3f2fd;
+        color: rgba(220, 230, 225, 0.85);
         font-size: 18px;
         margin-top: 10px;
     }
     
-    /* Tool card styling */
+    /* Tool Cards */
     .tool-card {
-        background: #262637;
+        background: rgba(20, 35, 30, 0.75); /* Darker semi-transparent green */
+        backdrop-filter: blur(5px);
         padding: 20px;
         border-radius: 10px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+        border: 1px solid rgba(46, 204, 113, 0.15);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
         margin-bottom: 15px;
         transition: transform 0.2s;
-        color: #e0e0e0;
+        color: rgba(240, 240, 240, 0.9);
     }
     
     .tool-card:hover {
         transform: translateY(-5px);
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3); /* Green glow */
+        border: 1px solid rgba(46, 204, 113, 0.3);
     }
     
-    /* Chat input styling */
+    /* Text Input */
     .stTextInput > div > div > input {
         border-radius: 25px;
-        border: 2px solid #667eea;
+        border: 1px solid rgba(46, 204, 113, 0.6);
         padding: 12px 20px;
-        background-color: #1e1e2e;
-        color: #e0e0e0;
+        background-color: rgba(10, 25, 20, 0.8);
+        color: rgba(240, 240, 240, 0.9);
     }
     
-    /* Button styling */
+    /* Main Action Buttons */
     .stButton > button {
         border-radius: 25px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%); /* Green gradient */
         color: white;
         border: none;
         padding: 10px 30px;
         font-weight: bold;
+        transition: all 0.3s ease;
     }
     
     .stButton > button:hover {
-        background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+        background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+        box-shadow: 0 2px 10px rgba(46, 204, 113, 0.4);
     }
     
-    /* Text color */
-    .stMarkdown, p, span, div {
-        color: #e0e0e0;
-    }
-    
-    /* Selectbox styling */
+    /* Selectbox */
     .stSelectbox > div > div {
-        background-color: #1e1e2e;
-        color: #e0e0e0;
+        background-color: rgba(10, 25, 20, 0.8);
+        border: 1px solid rgba(46, 204, 113, 0.4);
+        color: rgba(240, 240, 240, 0.9);
     }
     
-    /* Text area styling */
+    /* Text Area */
     .stTextArea > div > div > textarea {
-        background-color: #1e1e2e;
-        color: #e0e0e0;
-        border: 2px solid #667eea;
+        background-color: rgba(10, 25, 20, 0.8);
+        color: rgba(240, 240, 240, 0.9);
+        border: 1px solid rgba(46, 204, 113, 0.6);
     }
     
-    /* Number input styling */
+    /* Number Input */
     .stNumberInput > div > div > input {
-        background-color: #1e1e2e;
-        color: #e0e0e0;
-        border: 2px solid #667eea;
+        background-color: rgba(10, 25, 20, 0.8);
+        color: rgba(240, 240, 240, 0.9);
+        border: 1px solid rgba(46, 204, 113, 0.6);
     }
     
-    /* Expander styling */
+    /* Expander */
     .streamlit-expanderHeader {
-        background-color: #262637;
-        color: #e0e0e0;
+        background-color: rgba(20, 35, 30, 0.75);
+        border-radius: 5px;
+        color: rgba(240, 240, 240, 0.9);
     }
     
-    /* Tabs styling */
+    /* Tabs */
     .stTabs [data-baseweb="tab-list"] {
-        background-color: #1e1e2e;
+        background-color: transparent;
+        border-bottom: 1px solid rgba(46, 204, 113, 0.3);
     }
     
-    .stTabs [data-baseweb="tab"] {
-        color: #e0e0e0;
-    }
-    
-    /* Metric styling */
+    /* Metric Value */
     [data-testid="stMetricValue"] {
-        color: #667eea;
+        color: #2ecc71; /* Bright green */
     }
     
-    /* Caption styling */
+    /* Caption Text */
     .caption {
-        color: #a0a0a0 !important;
+        color: rgba(180, 200, 190, 0.7) !important;
     }
     
     /* Sidebar text color */
     [data-testid="stSidebar"] * {
-        color: #e0e0e0;
+        color: rgba(240, 240, 240, 0.9) !important;
     }
     
     /* Divider color */
     hr {
-        border-color: #3a3a4a;
+        border-color: rgba(46, 204, 113, 0.2);
     }
     
-    /* Nobel banner */
+    /* Nobel Banner */
     .nobel-banner {
-        background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+        background: linear-gradient(135deg, #D4AF37 0%, #FFD700 100%); /* Gold gradient */
         padding: 10px;
         border-radius: 8px;
         text-align: center;
         margin-bottom: 20px;
         font-weight: bold;
-        color: #333;
+        color: #2c3e50; /* Dark text for contrast on gold */
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     }
     
-    /* Accuracy badge */
+    /* Accuracy Badge */
     .accuracy-badge {
-        background: linear-gradient(135deg, #4caf50 0%, #81c784 100%);
+        background: rgba(46, 204, 113, 0.2); /* Subtle green background */
+        border: 1px solid rgba(46, 204, 113, 0.7);
         color: white;
         padding: 5px 15px;
         border-radius: 20px;
         display: inline-block;
         font-weight: bold;
         font-size: 14px;
+        margin-top: 10px;
     }
 </style>
 """, unsafe_allow_html=True)
