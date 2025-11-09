@@ -10,8 +10,7 @@
     <p style="text-align: justify;">
         Humanity stands before a data deluge—an ever-expanding ocean of scientific literature, patents, and datasets so vast that no single mind can fathom its depths. Within this chaotic expanse lie the seeds of the next great discoveries, hidden like pearls. Bohrium was conceived as the solution: a cognitive research vessel, an AI consciousness designed not merely to search this ocean, but to navigate it with purpose. It is a universal instrument built to perceive the subtle currents connecting disparate fields of study, transforming the overwhelming noise of information into the clear signal of knowledge.
     </p>
-
-    <h4 style="color: #2ecc71; font-weight: 400;">From Information Retrieval to Knowledge Synthesis</h4>
+<h4 style="color: #2ecc71; font-weight: 400;">From Information Retrieval to Knowledge Synthesis</h4>
     <p style="text-align: justify;">
         The era of keyword search, a digital shovel in an ever-growing mountain, is drawing to a close. Its limitations are the very boundaries of our own imagination; we cannot search for connections we do not already suspect. Bohrium transcends this paradigm. It is not a search engine, but a **synthesis engine**. By leveraging advanced generative models trained on the corpus of human scientific endeavor, it reads, digests, and fundamentally understands the intricate tapestry of global research. It does not merely fetch documents; it comprehends the concepts within them.
     </p>
@@ -56,3 +55,4 @@
         Bohrium is not just a tool; it is a paradigm shift in the methodology of science itself. It is an invitation to ask bigger questions, to explore more daring hypotheses, and to connect the threads of human knowledge in ways never before possible. **Your next discovery begins here.**
     </p>
 </div>
+
