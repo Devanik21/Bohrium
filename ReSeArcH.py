@@ -183,6 +183,12 @@ if 'library' not in st.session_state:
     st.session_state.library = []
 if 'search_history' not in st.session_state:
     st.session_state.search_history = []
+if 'collections' not in st.session_state:
+    st.session_state.collections = []
+if 'reading_list' not in st.session_state:
+    st.session_state.reading_list = []
+if 'notes' not in st.session_state:
+    st.session_state.notes = []
 
 # Configure Gemini API
 try:
@@ -375,11 +381,11 @@ elif st.session_state.current_tool == "📚 Library":
     tabs = st.tabs(["Saved Papers", "Collections", "Reading List", "Notes"])
     
     with tabs[0]:
-        if len(st.session_state.library) > 0:
+        if st.session_state.library and isinstance(st.session_state.library, list) and len(st.session_state.library) > 0:
             for idx, item in enumerate(st.session_state.library):
                 with st.container():
-                    st.markdown(f"**{item['title']}**")
-                    st.caption(f"Added: {item['date']}")
+                    st.markdown(f"**{item.get('title', 'Untitled')}**")
+                    st.caption(f"Added: {item.get('date', 'Unknown date')}")
                     col1, col2, col3 = st.columns([1, 1, 3])
                     with col1:
                         st.button("📖 Read", key=f"read_{idx}")
@@ -418,7 +424,7 @@ elif st.session_state.current_tool == "📚 Library":
                     st.success(f"Collection '{collection_name}' created!")
         
         # Display existing collections
-        if 'collections' in st.session_state and len(st.session_state.collections) > 0:
+        if 'collections' in st.session_state and isinstance(st.session_state.collections, list) and len(st.session_state.collections) > 0:
             st.markdown("### Your Collections")
             for idx, collection in enumerate(st.session_state.collections):
                 with st.expander(f"📁 {collection['name']} ({len(collection['papers'])} papers)"):
@@ -433,7 +439,7 @@ elif st.session_state.current_tool == "📚 Library":
         if 'reading_list' not in st.session_state:
             st.session_state.reading_list = []
         
-        if len(st.session_state.reading_list) > 0:
+        if isinstance(st.session_state.reading_list, list) and len(st.session_state.reading_list) > 0:
             for idx, item in enumerate(st.session_state.reading_list):
                 col1, col2, col3 = st.columns([3, 1, 1])
                 with col1:
@@ -482,10 +488,11 @@ elif st.session_state.current_tool == "📚 Library":
             st.markdown("---")
             st.markdown("### Saved Notes")
             for idx, note in enumerate(reversed(st.session_state.notes)):
-                with st.expander(f"📄 Note from {note['date']}"):
-                    st.markdown(note['content'])
-                    if st.button("🗑️ Delete", key=f"delete_note_{idx}"):
-                        st.session_state.notes.pop(len(st.session_state.notes) - 1 - idx)
+                note_display_idx = len(st.session_state.notes) - 1 - idx
+                with st.expander(f"📄 Note from {note.get('date', 'Unknown')}"):
+                    st.markdown(note.get('content', ''))
+                    if st.button("🗑️ Delete", key=f"delete_note_{note_display_idx}"):
+                        st.session_state.notes.pop(note_display_idx)
                         st.rerun()
 
 elif st.session_state.current_tool == "🎯 Practice":
