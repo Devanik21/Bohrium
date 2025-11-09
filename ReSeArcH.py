@@ -216,7 +216,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Set the background image
-image_path = "green-gradient-abstract-background-empty-room-with-space-your-text-picture.jpg"
+image_path = "luxury-plain-green-gradient-abstract-studio-background-empty-room-with-space-your-text-picture.jpg"
 set_app_background(image_path)
 
 # Initialize session state
@@ -904,4 +904,3 @@ st.markdown("""
         Bohrium is not just a tool; it is a paradigm shift in the methodology of science itself. <b>Your next discovery begins here.</b>
     </p>
 </div>""", unsafe_allow_html=True)
-
