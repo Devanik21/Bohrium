@@ -903,5 +903,4 @@ st.markdown("""
     <p style="text-align: center; font-size: 1.1rem; color: #ffffff; margin-top: 2rem;">
         Bohrium is not just a tool; it is a paradigm shift in the methodology of science itself. <b>Your next discovery begins here.</b>
     </p>
-</div>
-""", unsafe_allow_html=True)
+</div>""", unsafe_allow_html=True)
