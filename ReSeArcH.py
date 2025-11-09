@@ -370,16 +370,16 @@ if st.session_state.current_tool in ["🆕 New Chat", "Science Navigator"]:
         # Action buttons
         col_a, col_b, col_c, col_d = st.columns(4)
         with col_a:
-            if st.button("⚡ Quick Answer"):
+            if st.button("⚡ Quick Answer", use_container_width=True):
                 st.session_state.mode = "quick"
         with col_b:
-            if st.button("🔬 Deep Research"):
+            if st.button("🔬 Deep Research", use_container_width=True):
                 st.session_state.mode = "deep"
         with col_c:
-            if st.button("📊 Data Analysis"):
+            if st.button("📊 Data Analysis", use_container_width=True):
                 st.session_state.mode = "analysis"
         with col_d:
-            if st.button("💡 More..."):
+            if st.button("💡 More...", use_container_width=True):
                 st.session_state.mode = "more"
         
         if user_query:
