@@ -23,12 +23,10 @@
     <p style="text-align: justify;">
         Scientific discovery is not a linear path but a dynamic, recursive cycle of inquiry, experimentation, curation, and collaboration. To accelerate this cycle, Bohrium integrates every stage into a single, seamless environment, eliminating the friction that has historically slowed progress.
     </p>
-    <ul>
-        <li><b>Academic Search & Explore:</b> This is your telescope, a lens to peer into the known universe of over 170 million documents. It reveals not just individual stars, but the gravitational pull between them, mapping the constellations of established knowledge and highlighting the faint, redshifted light of emerging frontiers.</li>
-        <li><b>Uni-Lab & Computation:</b> This is your virtual workbench, a sandboxed reality where hypotheses can be tested in silico. From running complex molecular dynamics simulations to performing high-dimensional data analysis, the Uni-Lab provides the computational horsepower to move from theory to evidence without leaving the ecosystem.</li>
-        <li><b>Library & Knowledge Base:</b> This is your personal grimoire, a dynamic repository where knowledge is not just stored but actively curated. Here, insights are annotated, linked, and woven into new collections, transforming a passive reading list into an active, personalized knowledge graph that grows with your understanding.</li>
-        <li><b>Scholars & History:</b> This is your symbiotic network. It connects you with the global community of minds—the original authors and their intellectual descendants—and provides a clear, immutable record of your own intellectual journey, ensuring that no insight is ever lost.</li>
-    </ul>
+* **Academic Search & Explore:** This is your telescope, a lens to peer into the known universe of over 170 million documents. It reveals not just individual stars, but the gravitational pull between them, mapping the constellations of established knowledge and highlighting the faint, redshifted light of emerging frontiers.
+* **Uni-Lab & Computation:** This is your virtual workbench, a sandboxed reality where hypotheses can be tested in silico. From running complex molecular dynamics simulations to performing high-dimensional data analysis, the Uni-Lab provides the computational horsepower to move from theory to evidence without leaving the ecosystem.
+* **Library & Knowledge Base:** This is your personal grimoire, a dynamic repository where knowledge is not just stored but actively curated. Here, insights are annotated, linked, and woven into new collections, transforming a passive reading list into an active, personalized knowledge graph that grows with your understanding.
+* **Scholars & History:** This is your symbiotic network. It connects you with the global community of minds—the original authors and their intellectual descendants—and provides a clear, immutable record of your own intellectual journey, ensuring that no insight is ever lost.
 
     <h4 style="color: #2ecc71; font-weight: 400;">The Augmented Scientist: A New Symbiosis</h4>
     <p style="text-align: justify;">
@@ -55,6 +53,6 @@
     </p>
 
     <p style="text-align: center; font-size: 1.1rem; color: #ffffff; margin-top: 2rem;">
-        Bohrium is not just a tool; it is a paradigm shift in the methodology of science itself. It is an invitation to ask bigger questions, to explore more daring hypotheses, and to connect the threads of human knowledge in ways never before possible. <b>Your next discovery begins here.</b>
+        Bohrium is not just a tool; it is a paradigm shift in the methodology of science itself. It is an invitation to ask bigger questions, to explore more daring hypotheses, and to connect the threads of human knowledge in ways never before possible. **Your next discovery begins here.**
     </p>
 </div>
