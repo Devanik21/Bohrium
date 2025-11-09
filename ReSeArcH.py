@@ -359,27 +359,28 @@ if st.session_state.current_tool in ["🆕 New Chat", "Science Navigator"]:
     col1, col2, col3 = st.columns([1, 2, 1])
     
     with col2:
-        # Search input
-        user_query = st.text_input(
-            "",
-            placeholder="Ask any scientific questions...",
-            key="main_search",
-            label_visibility="collapsed"
-        )
-        
-        # Action buttons
-        col_a, col_b, col_c, col_d = st.columns(4)
-        with col_a:
-            if st.button("⚡ Quick Answer", use_container_width=True):
+        # Create columns for input and action buttons
+        input_col, btn1_col, btn2_col, btn3_col, btn4_col = st.columns([4, 1, 1, 1, 1])
+
+        with input_col:
+            user_query = st.text_input(
+                "",
+                placeholder="Ask any scientific questions...",
+                key="main_search",
+                label_visibility="collapsed"
+            )
+
+        with btn1_col:
+            if st.button("⚡", help="Quick Answer", use_container_width=True):
                 st.session_state.mode = "quick"
-        with col_b:
-            if st.button("🔬 Deep Research", use_container_width=True):
+        with btn2_col:
+            if st.button("🔬", help="Deep Research", use_container_width=True):
                 st.session_state.mode = "deep"
-        with col_c:
-            if st.button("📊 Data Analysis", use_container_width=True):
+        with btn3_col:
+            if st.button("📊", help="Data Analysis", use_container_width=True):
                 st.session_state.mode = "analysis"
-        with col_d:
-            if st.button("💡 More...", use_container_width=True):
+        with btn4_col:
+            if st.button("💡", help="More...", use_container_width=True):
                 st.session_state.mode = "more"
         
         if user_query:
