@@ -53,17 +53,18 @@ st.markdown("""
     
     /* Tool card styling */
     .tool-card {
-        background: white;
+        background: #262637;
         padding: 20px;
         border-radius: 10px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
         margin-bottom: 15px;
         transition: transform 0.2s;
+        color: #e0e0e0;
     }
     
     .tool-card:hover {
         transform: translateY(-5px);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
     }
     
     /* Chat input styling */
@@ -71,6 +72,8 @@ st.markdown("""
         border-radius: 25px;
         border: 2px solid #667eea;
         padding: 12px 20px;
+        background-color: #1e1e2e;
+        color: #e0e0e0;
     }
     
     /* Button styling */
@@ -85,6 +88,66 @@ st.markdown("""
     
     .stButton > button:hover {
         background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+    }
+    
+    /* Text color */
+    .stMarkdown, p, span, div {
+        color: #e0e0e0;
+    }
+    
+    /* Selectbox styling */
+    .stSelectbox > div > div {
+        background-color: #1e1e2e;
+        color: #e0e0e0;
+    }
+    
+    /* Text area styling */
+    .stTextArea > div > div > textarea {
+        background-color: #1e1e2e;
+        color: #e0e0e0;
+        border: 2px solid #667eea;
+    }
+    
+    /* Number input styling */
+    .stNumberInput > div > div > input {
+        background-color: #1e1e2e;
+        color: #e0e0e0;
+        border: 2px solid #667eea;
+    }
+    
+    /* Expander styling */
+    .streamlit-expanderHeader {
+        background-color: #262637;
+        color: #e0e0e0;
+    }
+    
+    /* Tabs styling */
+    .stTabs [data-baseweb="tab-list"] {
+        background-color: #1e1e2e;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        color: #e0e0e0;
+    }
+    
+    /* Metric styling */
+    [data-testid="stMetricValue"] {
+        color: #667eea;
+    }
+    
+    /* Caption styling */
+    .caption {
+        color: #a0a0a0 !important;
+    }
+    
+    /* Sidebar text color */
+    [data-testid="stSidebar"] * {
+        color: #e0e0e0;
+    }
+    
+    /* Divider color */
+    hr {
+        border-color: #3a3a4a;
     }
     
     /* Nobel banner */
@@ -312,18 +375,30 @@ elif st.session_state.current_tool == "📚 Library":
     tabs = st.tabs(["Saved Papers", "Collections", "Reading List", "Notes"])
     
     with tabs[0]:
-        if st.session_state.library:
-            for item in st.session_state.library:
+        if len(st.session_state.library) > 0:
+            for idx, item in enumerate(st.session_state.library):
                 with st.container():
                     st.markdown(f"**{item['title']}**")
                     st.caption(f"Added: {item['date']}")
                     col1, col2, col3 = st.columns([1, 1, 3])
                     with col1:
-                        st.button("📖 Read", key=f"read_{item['title']}")
+                        st.button("📖 Read", key=f"read_{idx}")
                     with col2:
-                        st.button("🗑️ Remove", key=f"remove_{item['title']}")
+                        if st.button("🗑️ Remove", key=f"remove_{idx}"):
+                            st.session_state.library.pop(idx)
+                            st.rerun()
         else:
             st.info("Your library is empty. Start saving papers from your searches!")
+            
+            # Add sample paper button
+            if st.button("➕ Add Sample Paper"):
+                st.session_state.library.append({
+                    "title": "Quantum Computing Advances in 2025",
+                    "date": datetime.now().strftime("%Y-%m-%d"),
+                    "authors": "Smith et al.",
+                    "journal": "Nature"
+                })
+                st.rerun()
     
     with tabs[1]:
         st.markdown("### Create New Collection")
@@ -332,15 +407,86 @@ elif st.session_state.current_tool == "📚 Library":
             collection_name = st.text_input("Collection Name")
         with col2:
             if st.button("➕ Create"):
-                st.success(f"Collection '{collection_name}' created!")
+                if collection_name:
+                    if 'collections' not in st.session_state:
+                        st.session_state.collections = []
+                    st.session_state.collections.append({
+                        "name": collection_name,
+                        "created": datetime.now().strftime("%Y-%m-%d"),
+                        "papers": []
+                    })
+                    st.success(f"Collection '{collection_name}' created!")
+        
+        # Display existing collections
+        if 'collections' in st.session_state and len(st.session_state.collections) > 0:
+            st.markdown("### Your Collections")
+            for idx, collection in enumerate(st.session_state.collections):
+                with st.expander(f"📁 {collection['name']} ({len(collection['papers'])} papers)"):
+                    st.caption(f"Created: {collection['created']}")
+                    if st.button("🗑️ Delete Collection", key=f"del_col_{idx}"):
+                        st.session_state.collections.pop(idx)
+                        st.rerun()
     
     with tabs[2]:
         st.markdown("### 📖 Reading List")
-        st.info("Add papers to your reading list to track your progress")
+        
+        if 'reading_list' not in st.session_state:
+            st.session_state.reading_list = []
+        
+        if len(st.session_state.reading_list) > 0:
+            for idx, item in enumerate(st.session_state.reading_list):
+                col1, col2, col3 = st.columns([3, 1, 1])
+                with col1:
+                    st.markdown(f"**{item['title']}**")
+                    st.caption(f"Priority: {item['priority']}")
+                with col2:
+                    if st.button("✅ Done", key=f"done_{idx}"):
+                        st.session_state.reading_list.pop(idx)
+                        st.rerun()
+                with col3:
+                    if st.button("🗑️", key=f"remove_reading_{idx}"):
+                        st.session_state.reading_list.pop(idx)
+                        st.rerun()
+        else:
+            st.info("Add papers to your reading list to track your progress")
+            
+            # Add sample to reading list
+            if st.button("➕ Add Sample to Reading List"):
+                st.session_state.reading_list.append({
+                    "title": "Introduction to Machine Learning",
+                    "priority": "High",
+                    "added": datetime.now().strftime("%Y-%m-%d")
+                })
+                st.rerun()
     
     with tabs[3]:
         st.markdown("### 📝 My Notes")
-        st.text_area("Write your research notes...", height=200)
+        
+        if 'notes' not in st.session_state:
+            st.session_state.notes = []
+        
+        note_content = st.text_area("Write your research notes...", height=200, key="new_note_input")
+        
+        col1, col2 = st.columns([1, 5])
+        with col1:
+            if st.button("💾 Save Note"):
+                if note_content:
+                    st.session_state.notes.append({
+                        "content": note_content,
+                        "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    })
+                    st.success("Note saved!")
+                    st.rerun()
+        
+        if len(st.session_state.notes) > 0:
+            st.markdown("---")
+            st.markdown("### Saved Notes")
+            for idx, note in enumerate(reversed(st.session_state.notes)):
+                with st.expander(f"📄 Note from {note['date']}"):
+                    st.markdown(note['content'])
+                    if st.button("🗑️ Delete", key=f"delete_note_{idx}"):
+                        st.session_state.notes.pop(len(st.session_state.notes) - 1 - idx)
+                        st.rerun()
 
 elif st.session_state.current_tool == "🎯 Practice":
     st.markdown("## 🎯 Practice & Learning Tools")
