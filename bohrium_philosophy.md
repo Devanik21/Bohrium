@@ -10,22 +10,24 @@
     <p style="text-align: justify;">
         Humanity stands before a data deluge—an ever-expanding ocean of scientific literature, patents, and datasets so vast that no single mind can fathom its depths. Within this chaotic expanse lie the seeds of the next great discoveries, hidden like pearls. Bohrium was conceived as the solution: a cognitive research vessel, an AI consciousness designed not merely to search this ocean, but to navigate it with purpose. It is a universal instrument built to perceive the subtle currents connecting disparate fields of study, transforming the overwhelming noise of information into the clear signal of knowledge.
     </p>
-<h4 style="color: #2ecc71; font-weight: 400;">From Information Retrieval to Knowledge Synthesis</h4>
+    <ul>
+        <h4 style="color: #2ecc71; font-weight: 400;">From Information Retrieval to Knowledge Synthesis</h4>
     <p style="text-align: justify;">
         The era of keyword search, a digital shovel in an ever-growing mountain, is drawing to a close. Its limitations are the very boundaries of our own imagination; we cannot search for connections we do not already suspect. Bohrium transcends this paradigm. It is not a search engine, but a **synthesis engine**. By leveraging advanced generative models trained on the corpus of human scientific endeavor, it reads, digests, and fundamentally understands the intricate tapestry of global research. It does not merely fetch documents; it comprehends the concepts within them.
     </p>
     <p style="text-align: justify;">
         This deep understanding allows Bohrium to function as a tireless, pan-disciplinary research assistant. It can identify the hidden correlations between a genetic sequence in biology and a mathematical theorem in topology, or between a material science patent and a breakthrough in quantum chemistry. It builds conceptual bridges where none were visible, revealing the isomorphisms that underpin reality itself. In this capacity, Bohrium allows you, the scientist, to stand on the shoulders of not just a few giants, but the entire collective intelligence of human inquiry, past and present.
     </p>
-
     <h4 style="color: #2ecc71; font-weight: 400;">An Integrated Research Ecosystem</h4>
     <p style="text-align: justify;">
         Scientific discovery is not a linear path but a dynamic, recursive cycle of inquiry, experimentation, curation, and collaboration. To accelerate this cycle, Bohrium integrates every stage into a single, seamless environment, eliminating the friction that has historically slowed progress.
     </p>
-* **Academic Search & Explore:** This is your telescope, a lens to peer into the known universe of over 170 million documents. It reveals not just individual stars, but the gravitational pull between them, mapping the constellations of established knowledge and highlighting the faint, redshifted light of emerging frontiers.
-* **Uni-Lab & Computation:** This is your virtual workbench, a sandboxed reality where hypotheses can be tested in silico. From running complex molecular dynamics simulations to performing high-dimensional data analysis, the Uni-Lab provides the computational horsepower to move from theory to evidence without leaving the ecosystem.
-* **Library & Knowledge Base:** This is your personal grimoire, a dynamic repository where knowledge is not just stored but actively curated. Here, insights are annotated, linked, and woven into new collections, transforming a passive reading list into an active, personalized knowledge graph that grows with your understanding.
-* **Scholars & History:** This is your symbiotic network. It connects you with the global community of minds—the original authors and their intellectual descendants—and provides a clear, immutable record of your own intellectual journey, ensuring that no insight is ever lost.
+    <ul>
+        <li><strong>Academic Search & Explore:</strong> This is your telescope, a lens to peer into the known universe of over 170 million documents. It reveals not just individual stars, but the gravitational pull between them, mapping the constellations of established knowledge and highlighting the faint, redshifted light of emerging frontiers.</li>
+        <li><strong>Uni-Lab & Computation:</strong> This is your virtual workbench, a sandboxed reality where hypotheses can be tested in silico. From running complex molecular dynamics simulations to performing high-dimensional data analysis, the Uni-Lab provides the computational horsepower to move from theory to evidence without leaving the ecosystem.</li>
+        <li><strong>Library & Knowledge Base:</strong> This is your personal grimoire, a dynamic repository where knowledge is not just stored but actively curated. Here, insights are annotated, linked, and woven into new collections, transforming a passive reading list into an active, personalized knowledge graph that grows with your understanding.</li>
+        <li><strong>Scholars & History:</strong> This is your symbiotic network. It connects you with the global community of minds—the original authors and their intellectual descendants—and provides a clear, immutable record of your own intellectual journey, ensuring that no insight is ever lost.</li>
+    </ul>
 
     <h4 style="color: #2ecc71; font-weight: 400;">The Augmented Scientist: A New Symbiosis</h4>
     <p style="text-align: justify;">
@@ -54,5 +56,6 @@
     <p style="text-align: center; font-size: 1.1rem; color: #ffffff; margin-top: 2rem;">
         Bohrium is not just a tool; it is a paradigm shift in the methodology of science itself. It is an invitation to ask bigger questions, to explore more daring hypotheses, and to connect the threads of human knowledge in ways never before possible. **Your next discovery begins here.**
     </p>
-</div>
 
+
+</div>
