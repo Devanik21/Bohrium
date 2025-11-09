@@ -218,7 +218,10 @@ def save_state():
         'reading_list': st.session_state.reading_list,
         'notes': st.session_state.notes,
     }
-    user_data_table.upsert(current_state, doc_id=1)
+    if user_data_table.get(doc_id=1):
+        user_data_table.update(current_state, doc_ids=[1])
+    else:
+        user_data_table.insert(current_state)
     st.toast("Progress saved!", icon="💾")
 
 # Configure Gemini API
