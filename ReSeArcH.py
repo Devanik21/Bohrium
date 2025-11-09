@@ -1,6 +1,8 @@
 import streamlit as st
 import google.generativeai as genai
 from datetime import datetime
+import base64
+import os
 import json
 from tinydb import TinyDB, Query
 
@@ -12,14 +14,34 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+def set_app_background(image_file):
+    """
+    Sets the background of the Streamlit app to a local image file.
+    """
+    if not os.path.exists(image_file):
+        st.error(f"Background image not found at '{image_file}'")
+        return
+
+    with open(image_file, "rb") as f:
+        img_bytes = f.read()
+    
+    base64_img = base64.b64encode(img_bytes).decode()
+    
+    st.markdown(f"""
+    <style>
+    .stApp {{
+        background-image: url("data:image/jpeg;base64,{base64_img}");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+    }}
+    </style>
+    """, unsafe_allow_html=True)
+
 # Custom CSS for styling
 st.markdown("""
 <style>
-    /* Main container styling */
-    .main {
-        background-color: #0e1117;
-    }
-    
     /* Sidebar styling */
     [data-testid="stSidebar"] {
         background-color: #1e1e2e;
@@ -174,6 +196,10 @@ st.markdown("""
     }
 </style>
 """, unsafe_allow_html=True)
+
+# Set the background image
+image_path = "luxury-plain-green-gradient-abstract-studio-background-empty-room-with-space-your-text-picture.jpg"
+set_app_background(image_path)
 
 # Initialize session state
 if 'state_loaded' not in st.session_state:
