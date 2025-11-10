@@ -229,7 +229,7 @@ Furthermore, Bohrium is architected to **democratize access** to the frontier of
 
 ---
 
-## <span style="color: #2ecc71;">🚀 The Road Ahead: 2025 and Beyond</span>
+## <span style="color: #2ecc71;">✨ The Road Ahead: 2025 and Beyond</span>
 
 <div style="background: linear-gradient(135deg, rgba(46, 204, 113, 0.15) 0%, rgba(52, 152, 219, 0.15) 100%); padding: 2rem; border-radius: 15px; margin: 2rem 0; border: 2px solid rgba(46, 204, 113, 0.4);">
 
@@ -304,7 +304,7 @@ Bohrium is not just a tool; it is a <strong style="color: #2ecc71;">paradigm shi
 </div>
 
 <h2 style="color: #2ecc71; font-size: 2rem; margin-top: 2rem; text-shadow: 0 0 20px rgba(46, 204, 113, 0.4);">
-Your next discovery begins here. 🚀
+Your next discovery begins here. 
 </h2>
 
 </div>
@@ -321,4 +321,5 @@ Bohrium © 2025 | Powered by AI • Guided by Scientists • Built for Discovery
 </div>
 
 </div>
+
 
