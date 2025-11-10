@@ -1,6 +1,7 @@
 streamlit
-google-generativeai
-plotly
-scipy
-networkx
+google-genai
 tinydb
+pandas
+plotly
+typing
+python-dotenv # Recommended for managing API keys (like Google API key) securely
