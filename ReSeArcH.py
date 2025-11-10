@@ -3333,12 +3333,121 @@ else:
         st.markdown("- Discover research topics")
         st.markdown("- Follow research areas")
     
-    elif "Subscription" in st.session_state.current_tool: # 📋
-        st.markdown("### 📋 Manage Your Subscriptions")
-        st.markdown("- Subscribe to journals")
-        st.markdown("- Get alerts for new papers")
-        st.markdown("- Follow researchers")
-    
+    elif st.session_state.current_tool == "👨‍🎓 Scholars":
+        st.markdown("## 👨‍🎓 Scholar Profiles & Analytics")
+        st.markdown("Discover, analyze, and connect with researchers from around the world.")
+
+        # Mock database of scholars
+        mock_scholars = [
+            {"id": "schen", "name": "Dr. Sarah Chen", "institution": "MIT", "field": "Computer Science", "interests": ["quantum computing", "machine learning", "algorithms"], "h_index": 45, "citations": 6800, "publications": [
+                {"title": "Quantum Error Correction with ML", "year": 2023, "citations": 250},
+                {"title": "Topological Quantum Computing", "year": 2021, "citations": 400},
+            ]},
+            {"id": "jrod", "name": "Prof. James Rodriguez", "institution": "Stanford University", "field": "Computer Science", "interests": ["artificial intelligence", "neural networks", "robotics"], "h_index": 52, "citations": 9200, "publications": [
+                {"title": "Self-improving AI Systems", "year": 2022, "citations": 310},
+                {"title": "Robotic Grasping Techniques", "year": 2020, "citations": 280},
+            ]},
+            {"id": "ewatson", "name": "Dr. Emily Watson", "institution": "Oxford University", "field": "Biology", "interests": ["genomics", "bioinformatics", "computational biology"], "h_index": 38, "citations": 5500, "publications": [
+                {"title": "CRISPR-Cas9 Off-target Analysis", "year": 2023, "citations": 180},
+                {"title": "Genomic Data Visualization", "year": 2021, "citations": 150},
+            ]},
+            {"id": "mzhag", "name": "Prof. Michael Zhang", "institution": "Tsinghua University", "field": "Chemistry", "interests": ["renewable energy", "materials science", "nanotechnology"], "h_index": 41, "citations": 7100, "publications": [
+                {"title": "Perovskite Solar Cell Stability", "year": 2022, "citations": 220},
+                {"title": "Nanomaterials for Catalysis", "year": 2020, "citations": 190},
+            ]},
+            {"id": "lmartinez", "name": "Dr. Laura Martinez", "institution": "ETH Zurich", "field": "Environmental Science", "interests": ["climate modeling", "data science", "environmental physics"], "h_index": 36, "citations": 4900, "publications": [
+                {"title": "High-Resolution Climate Models", "year": 2023, "citations": 160},
+                {"title": "Ocean Acidification Trends", "year": 2021, "citations": 140},
+            ]}
+        ]
+
+        scholar_tabs = st.tabs(["🔍 Search Scholars", "🏆 Leaderboards", "👥 My Network"])
+
+        with scholar_tabs[0]: # Search Scholars
+            st.markdown("### 🔍 Find a Scholar")
+            search_query = st.text_input("Search by name, institution, or research interest...", key="scholar_search")
+
+            if search_query:
+                results = [s for s in mock_scholars if search_query.lower() in s['name'].lower() or search_query.lower() in s['institution'].lower() or any(search_query.lower() in interest for interest in s['interests'])]
+            else:
+                results = mock_scholars
+
+            if not results:
+                st.warning("No scholars found matching your query.")
+            
+            for scholar in results:
+                with st.expander(f"**{scholar['name']}** - {scholar['institution']}"):
+                    st.markdown(f"#### {scholar['name']}")
+                    st.markdown(f"**Field:** {scholar['field']} | **Institution:** {scholar['institution']}")
+
+                    # Metrics
+                    col1, col2, col3 = st.columns(3)
+                    col1.metric("h-index", scholar['h_index'])
+                    col2.metric("Total Citations", f"{scholar['citations']:,}")
+                    col3.metric("Publications", len(scholar['publications']))
+
+                    # Interests
+                    st.markdown("**Research Interests:**")
+                    st.markdown('<div class="badge-container">', unsafe_allow_html=True)
+                    for interest in scholar['interests']:
+                        st.markdown(f'<span class="topic-badge">{interest}</span>', unsafe_allow_html=True)
+                    st.markdown('</div>', unsafe_allow_html=True)
+
+                    # Key Publications
+                    st.markdown("##### Key Publications")
+                    for pub in scholar['publications']:
+                        st.markdown(f"- **{pub['title']}** ({pub['year']}) - *{pub['citations']} citations*")
+
+                    # Publication Timeline
+                    st.markdown("##### Publication Velocity")
+                    pub_years = [p['year'] for p in scholar['publications']] + [2018, 2019] # Add some history
+                    year_counts = Counter(pub_years)
+                    df = pd.DataFrame(list(year_counts.items()), columns=['Year', 'Count']).sort_values('Year')
+                    
+                    fig = px.bar(df, x='Year', y='Count', title=f"Publications per Year for {scholar['name']}")
+                    fig.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+                    fig.update_traces(marker_color='#2ecc71')
+                    st.plotly_chart(fig, use_container_width=True)
+
+                    # Actions
+                    if st.button("🤝 Connect", key=f"connect_{scholar['id']}"):
+                        st.success(f"Connection request sent to {scholar['name']}! (simulation)")
+                    if st.button("👥 Add to My Network", key=f"track_{scholar['id']}"):
+                        if 'my_network' not in st.session_state:
+                            st.session_state.my_network = []
+                        if scholar not in st.session_state.my_network:
+                            st.session_state.my_network.append(scholar)
+                            save_state()
+                            st.success(f"{scholar['name']} added to your network.")
+                        else:
+                            st.info(f"{scholar['name']} is already in your network.")
+
+        with scholar_tabs[1]: # Leaderboards
+            st.markdown("### 🏆 Field Leaderboards")
+            st.markdown("Top researchers based on simulated metrics.")
+            
+            field_to_show = st.selectbox("Select a Field", list(set(s['field'] for s in mock_scholars)))
+            
+            scholars_in_field = sorted([s for s in mock_scholars if s['field'] == field_to_show], key=lambda x: x['citations'], reverse=True)
+            
+            for rank, scholar in enumerate(scholars_in_field, 1):
+                st.markdown(f"""
+                <div class="feature-card">
+                    <h4>{rank}. {scholar['name']} - {scholar['institution']}</h4>
+                    <p><span class="citation-badge">Citations: {scholar['citations']:,}</span> | <span class="citation-badge">h-index: {scholar['h_index']}</span></p>
+                </div>
+                """, unsafe_allow_html=True)
+
+        with scholar_tabs[2]: # My Network
+            st.markdown("### 👥 My Scholar Network")
+            st.markdown("Researchers you are tracking.")
+
+            if 'my_network' in st.session_state and st.session_state.my_network:
+                for scholar in st.session_state.my_network:
+                    st.markdown(f"- **{scholar['name']}** ({scholar['institution']})")
+            else:
+                st.info("You are not tracking any scholars yet. Add scholars from the 'Search Scholars' tab.")
+
     elif "Scholars" in st.session_state.current_tool: # 👨‍🎓
         st.markdown("### 👨‍🎓 Scholar Profiles")
         st.markdown("- View researcher profiles")
@@ -3351,6 +3460,12 @@ else:
         st.markdown("- Learn scientific concepts")
         st.markdown("- Explore methodologies")
     
+    elif "Subscription" in st.session_state.current_tool: # 📋
+        st.markdown("### 📋 Manage Your Subscriptions")
+        st.markdown("- Subscribe to journals")
+        st.markdown("- Get alerts for new papers")
+        st.markdown("- Follow researchers")
+
     elif "Practice" in st.session_state.current_tool: # 🎯
         st.markdown("### 🎯 Research Practice Tools")
         st.markdown("- Practice problem solving")
