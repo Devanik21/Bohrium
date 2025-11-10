@@ -3291,6 +3291,15 @@ else:
         st.markdown("- Statistical computing")
         st.markdown("- Machine learning models")
 
+# Display Bohrium Philosophy from markdown file
+st.markdown("---")
+try:
+    with open("bohrium_philosophy.md", "r", encoding="utf-8") as f:
+        philosophy_md = f.read()
+    st.markdown(philosophy_md, unsafe_allow_html=True)
+except FileNotFoundError:
+    st.warning("Could not find bohrium_philosophy.md file.")
+
 # Footer
 st.markdown("---")
 col_f1, col_f2, col_f3 = st.columns(3)
