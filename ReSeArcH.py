@@ -1424,7 +1424,7 @@ else:
     """, unsafe_allow_html=True)
 
 # Additional variables needed for function calls
-reproductive_rate_base = population_growth_rate{organism.name} went extinct")
+reproductive_rate_base = population_growth_rate{organism.name} went extinct)
                 continue
         
         # Reproduction
