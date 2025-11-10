@@ -18,14 +18,14 @@ Humanity stands before a data deluge—an ever-expanding ocean of scientific lit
 
 ### <span style="color: #2ecc71;">📊 The Scale of Modern Science</span>
 
-```
-🔬 170,000,000+ Scientific Papers
-🔧 160,000,000+ Patents  
-👨‍🎓 20,000,000+ Active Researchers
-🏛️ 10,000+ Research Institutions
-📈 3,000,000+ New Papers Annually
-🌍 26 Scientific Disciplines
-```
+<div style="background: linear-gradient(135deg, rgba(20, 35, 30, 0.8) 0%, rgba(10, 25, 20, 0.9) 100%); padding: 1.5rem; border-radius: 10px; border: 1px solid rgba(46, 204, 113, 0.4); margin: 1.5rem 0; font-family: 'Courier New', monospace;">
+<p style="color: rgba(220, 230, 225, 0.95); margin: 0.5rem 0;">🔬 <strong style="color: #2ecc71;">170,000,000+</strong> Scientific Papers</p>
+<p style="color: rgba(220, 230, 225, 0.95); margin: 0.5rem 0;">🔧 <strong style="color: #2ecc71;">160,000,000+</strong> Patents</p>
+<p style="color: rgba(220, 230, 225, 0.95); margin: 0.5rem 0;">👨‍🎓 <strong style="color: #2ecc71;">20,000,000+</strong> Active Researchers</p>
+<p style="color: rgba(220, 230, 225, 0.95); margin: 0.5rem 0;">🏛️ <strong style="color: #2ecc71;">10,000+</strong> Research Institutions</p>
+<p style="color: rgba(220, 230, 225, 0.95); margin: 0.5rem 0;">📈 <strong style="color: #2ecc71;">3,000,000+</strong> New Papers Annually</p>
+<p style="color: rgba(220, 230, 225, 0.95); margin: 0.5rem 0;">🌍 <strong style="color: #2ecc71;">26</strong> Scientific Disciplines</p>
+</div>
 
 <div style="background: rgba(46, 204, 113, 0.1); border-left: 4px solid #2ecc71; padding: 1rem; margin: 1.5rem 0; border-radius: 5px;">
 <strong style="color: #2ecc71;">Recent Milestone (2024):</strong> Scientists completed the first-ever full brain mapping of a fruit fly with <strong>139,000 neurons</strong> and <strong>50 million connections</strong>—a decade-long project that demonstrates the exponential complexity of biological systems and the need for AI-powered synthesis tools.
@@ -219,13 +219,13 @@ Furthermore, Bohrium is architected to **democratize access** to the frontier of
 
 ### <span style="color: #2ecc71;">🌍 Global Impact Statistics</span>
 
-```
-🌐 2024 Global Research Investment: $2.5+ trillion
-📊 Open Access Papers: 45% of new publications (up from 30% in 2020)
-👨‍🔬 Researchers in Developing Nations: 35% of global total
-💰 Quantum Computing Investment: $10+ billion government funding
-🔬 Clinical Trials Registered: 400,000+ active studies worldwide
-```
+<div style="background: linear-gradient(135deg, rgba(20, 35, 30, 0.8) 0%, rgba(10, 25, 20, 0.9) 100%); padding: 1.5rem; border-radius: 10px; border: 1px solid rgba(46, 204, 113, 0.4); margin: 1.5rem 0; font-family: 'Courier New', monospace;">
+<p style="color: rgba(220, 230, 225, 0.95); margin: 0.5rem 0;">🌐 2024 Global Research Investment: <strong style="color: #2ecc71;">$2.5+ trillion</strong></p>
+<p style="color: rgba(220, 230, 225, 0.95); margin: 0.5rem 0;">📊 Open Access Papers: <strong style="color: #2ecc71;">45%</strong> of new publications (up from 30% in 2020)</p>
+<p style="color: rgba(220, 230, 225, 0.95); margin: 0.5rem 0;">👨‍🔬 Researchers in Developing Nations: <strong style="color: #2ecc71;">35%</strong> of global total</p>
+<p style="color: rgba(220, 230, 225, 0.95); margin: 0.5rem 0;">💰 Quantum Computing Investment: <strong style="color: #2ecc71;">$10+ billion</strong> government funding</p>
+<p style="color: rgba(220, 230, 225, 0.95); margin: 0.5rem 0;">🔬 Clinical Trials Registered: <strong style="color: #2ecc71;">400,000+</strong> active studies worldwide</p>
+</div>
 
 ---
 
