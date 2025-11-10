@@ -3242,7 +3242,79 @@ elif st.session_state.current_tool == "ðŸŠ History":
         st.metric("Notes Created", len(st.session_state.notes))
     with col_s4:
         st.metric("Projects Started", len(st.session_state.projects))
+elif st.session_state.current_tool == "🌐 Explore":
+    st.markdown("## 🌐 Explore Scientific Frontiers")
+    st.markdown("Discover trending papers, hot topics, and breakthroughs across all fields of science.")
 
+    explore_tabs = st.tabs(["📈 Trending Papers", "🔥 Hot Topics", "🔭 Explore by Field"])
+
+    with explore_tabs[0]: # Trending Papers
+        st.markdown("### 📈 Trending Papers This Week")
+        
+        if st.button("🔄 Refresh Trending Papers"):
+            st.session_state.trending_papers_cache = None # Clear cache
+
+        if 'trending_papers_cache' not in st.session_state or st.session_state.trending_papers_cache is None:
+            with st.spinner("🛰️ Scanning the scientific cosmos for trending research..."):
+                try:
+                    prompt = """Generate a list of 5 plausible, recent, and trending scientific papers. For each paper, provide:
+- Title
+- Authors (e.g., 'Chen et al.')
+- Journal (e.g., 'Nature AI')
+- A one-sentence summary of the key finding.
+- A 'Trend Score' from 80 to 100.
+
+Format each paper clearly, separated by '---'. Example:
+**Title:** Real-time Quantum Error Correction with Machine Learning
+**Authors:** Rodriguez et al.
+**Journal:** Physical Review Letters
+**Summary:** Demonstrates a novel AI-driven approach that significantly reduces qubit decoherence in superconducting quantum computers.
+**Trend Score:** 98
+---
+"""
+                    response = model.generate_content(prompt)
+                    st.session_state.trending_papers_cache = response.text
+                except Exception as e:
+                    st.error(f"Could not fetch trending papers: {e}")
+                    st.session_state.trending_papers_cache = ""
+        
+        if st.session_state.trending_papers_cache:
+            papers = st.session_state.trending_papers_cache.split('---')
+            for paper_text in papers:
+                if paper_text.strip():
+                    st.markdown(f'<div class="feature-card">{paper_text.strip()}</div>', unsafe_allow_html=True)
+                    
+                    col1, col2, col3 = st.columns([1,1,3])
+                    with col1:
+                        if st.button("💾 Save", key=f"save_trend_{paper_text[:20]}", use_container_width=True):
+                            st.success("Saved to Library! (simulation)")
+                    with col2:
+                        if st.button("🔗 Find Similar", key=f"find_trend_{paper_text[:20]}", use_container_width=True):
+                            st.info("Searching for similar papers... (simulation)")
+
+    with explore_tabs[1]: # Hot Topics
+        st.markdown("### 🔥 Hot Research Topics")
+        st.markdown("Click on a topic to launch a deep research query.")
+
+        hot_topics = ["AI in Drug Discovery", "Organ-on-a-chip", "Perovskite Solar Cells", "CRISPR-based Diagnostics", "Quantum Machine Learning", "Solid-State Batteries", "Microplastic Pollution", "mRNA Vaccine Technology"]
+        
+        st.markdown('<div class="badge-container">', unsafe_allow_html=True)
+        for topic in hot_topics:
+            st.markdown(f'<span class="topic-badge">{topic}</span>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    with explore_tabs[2]: # Explore by Field
+        st.markdown("### 🔭 Explore by Research Field")
+        
+        fields = ["Physics", "Chemistry", "Biology", "Computer Science", "Medicine", "Engineering", "Environmental Science", "Neuroscience"]
+        field_choice = st.selectbox("Select a field to explore", fields)
+
+        if st.button(f"🚀 Explore {field_choice}"):
+            with st.spinner(f"Generating a snapshot of recent developments in {field_choice}..."):
+                prompt = f"Provide a brief overview of the most exciting recent developments and future trends in the field of {field_choice}. Mention 2-3 key papers or breakthroughs. Keep it concise and engaging for a scientific audience."
+                response = model.generate_content(prompt)
+                st.markdown(f"### Recent Developments in {field_choice}")
+                st.markdown(response.text)
 else:
     # Default view for other tools
     st.markdown(f"## {st.session_state.current_tool}")
@@ -3256,6 +3328,7 @@ else:
         st.markdown("- Follow research areas")
     
     elif "Subscription" in st.session_state.current_tool: # 📋
+    if "Subscription" in st.session_state.current_tool: # 📋
         st.markdown("### 📋 Manage Your Subscriptions")
         st.markdown("- Subscribe to journals")
         st.markdown("- Get alerts for new papers")
