@@ -1934,15 +1934,23 @@ elif st.session_state.current_tool == "📈 Analytics":
     col1, col2, col3, col4, col5 = st.columns(5)
     
     with col1:
-        st.metric("Total Papers", len(st.session_state.library))
+        papers_count = len(st.session_state.library) if isinstance(st.session_state.library, list) else 0
+        st.metric("Total Papers", papers_count)
     with col2:
-        st.metric("Active Projects", sum(1 for p in st.session_state.projects if p.get('status') == 'Active'))
+        active_projects = 0
+        if isinstance(st.session_state.projects, list):
+            active_projects = sum(1 for p in st.session_state.projects if p.get('status') == 'Active')
+        st.metric("Active Projects", active_projects)
     with col3:
-        st.metric("Research Notes", len(st.session_state.notes))
+        notes_count = len(st.session_state.notes) if isinstance(st.session_state.notes, list) else 0
+        st.metric("Research Notes", notes_count)
     with col4:
-        st.metric("Searches Made", len(st.session_state.search_history))
+        searches_count = len(st.session_state.search_history) if isinstance(st.session_state.search_history, list) else 0
+        st.metric("Searches Made", searches_count)
     with col5:
-        total_citations = sum(p.get('citations', 0) for p in st.session_state.library if isinstance(p, dict))
+        total_citations = 0
+        if isinstance(st.session_state.library, list):
+            total_citations = sum(p.get('citations', 0) for p in st.session_state.library if isinstance(p, dict))
         st.metric("Total Citations", total_citations)
     
     # Analytics tabs
