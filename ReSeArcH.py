@@ -2016,14 +2016,20 @@ elif st.session_state.current_tool == "📈 Analytics":
         st.markdown("### 🏷️ Research Topics Analysis")
         
         # Extract all keywords
+        # Extract all keywords
         all_keywords = []
-        for item in st.session_state.library:
-            if isinstance(item, dict):
-                all_keywords.extend(item.get('keywords', []))
         
-        for chat in st.session_state.chat_history:
-            if isinstance(chat, dict):
-                all_keywords.extend(chat.get('keywords', []))
+        # Add check to ensure library is a list
+        if isinstance(st.session_state.library, list):
+            for item in st.session_state.library:
+                if isinstance(item, dict):
+                    all_keywords.extend(item.get('keywords', []))
+        
+        # Add check to ensure chat_history is a list
+        if isinstance(st.session_state.chat_history, list):
+            for chat in st.session_state.chat_history:
+                if isinstance(chat, dict):
+                    all_keywords.extend(chat.get('keywords', []))
         
         if all_keywords:
             keyword_freq = Counter(all_keywords)
