@@ -3322,9 +3322,195 @@ Format each paper clearly, separated by '---'. Example:
                 st.markdown(f"### Recent Developments in {field_choice}")
                 st.markdown(response.text)
 else:
-    # This block handles any tools not in the main if/elif chain.
-    # We will add the implementations for the remaining tools here.
-    if st.session_state.current_tool == "💾 Computation":
+    # This block handles the newly implemented tools
+    if st.session_state.current_tool == "📖 Knowledge Base":
+        st.markdown("## 📖 Scientific Knowledge Base")
+        st.markdown("An AI-curated encyclopedia of scientific concepts, principles, and methodologies.")
+
+        kb_tabs = st.tabs(["🔍 Concept Explorer", "🔬 Methodology Guide", "📚 Curated Topics"])
+
+        with kb_tabs[0]: # Concept Explorer
+            st.markdown("### 🔍 Concept Explorer")
+            concept_query = st.text_input("Enter a scientific concept to learn about (e.g., 'Quantum Entanglement', 'Photosynthesis')", key="kb_concept_query")
+
+            if concept_query:
+                if research_assistant:
+                    with st.spinner(f"🧠 Generating a detailed explanation for '{concept_query}'..."):
+                        prompt = f"""Provide a comprehensive, educational explanation of the scientific concept: '{concept_query}'.
+
+Structure your response with the following sections:
+- **Overview:** A concise summary of the concept.
+- **Core Principles:** The fundamental ideas and mechanisms.
+- **Historical Context:** Key discoveries and scientists involved.
+- **Applications & Importance:** Why this concept matters in science and technology.
+- **Related Concepts:** Connections to other scientific ideas.
+
+Use clear language, analogies, and provide a 'For Further Reading' section with 2-3 landmark papers."""
+                        try:
+                            response = model.generate_content(prompt)
+                            st.markdown(response.text)
+                        except Exception as e:
+                            st.error(f"Error generating explanation: {e}")
+                else:
+                    st.error("Research assistant is not available.")
+
+        with kb_tabs[1]: # Methodology Guide
+            st.markdown("### 🔬 Methodology Guide")
+            method_query = st.text_input("Search for a research methodology (e.g., 'PCR', 'Mass Spectrometry', 'Systematic Review')", key="kb_method_query")
+
+            if method_query:
+                if research_assistant:
+                    with st.spinner(f"🔬 Detailing the methodology for '{method_query}'..."):
+                        prompt = f"""Create a guide for the research methodology: '{method_query}'.
+
+Include the following sections:
+- **Principle:** How does it work?
+- **Step-by-Step Protocol:** A general procedure outline.
+- **Applications:** What is it used for?
+- **Strengths & Limitations:** Pros and cons of the method.
+- **Data Analysis:** How to interpret the results.
+- **Common Pitfalls:** What to watch out for."""
+                        try:
+                            response = model.generate_content(prompt)
+                            st.markdown(response.text)
+                        except Exception as e:
+                            st.error(f"Error generating guide: {e}")
+                else:
+                    st.error("Research assistant is not available.")
+
+        with kb_tabs[2]: # Curated Topics
+            st.markdown("### 📚 Curated Topics")
+            st.markdown("Explore foundational topics curated by Bohrium AI.")
+            curated_topics = ["General Relativity", "DNA Replication", "Neural Networks", "The Standard Model of Particle Physics", "Thermodynamics"]
+            
+            for topic in curated_topics:
+                if st.button(topic, use_container_width=True):
+                    st.session_state.kb_concept_query = topic
+                    st.info(f"Switched to 'Concept Explorer' for '{topic}'. Please check the first tab.")
+
+    elif st.session_state.current_tool == "🎯 Practice":
+        st.markdown("## 🎯 Research Practice & Skill Development")
+        st.markdown("Sharpen your scientific acumen with AI-generated challenges and quizzes.")
+
+        practice_tabs = st.tabs(["🧩 Problem Solver", "❓ Knowledge Quiz", "📊 Data Interpretation"])
+
+        with practice_tabs[0]: # Problem Solver
+            st.markdown("### 🧩 Problem Solver Arena")
+            st.markdown("Test your ability to solve complex scientific problems.")
+            
+            problem_field = st.selectbox("Select a field for your problem:", ["Physics", "Chemistry", "Biology", "Computer Science", "Logic"])
+            problem_difficulty = st.select_slider("Select difficulty:", ["High School", "Undergraduate", "Graduate", "Post-doc"])
+
+            if st.button("🎲 Generate New Problem"):
+                if research_assistant:
+                    with st.spinner(f"Generating a {problem_difficulty}-level problem in {problem_field}..."):
+                        prompt = f"Generate a single, challenging, {problem_difficulty}-level scientific problem in the field of {problem_field}. Provide the problem statement clearly, then hide the solution behind a 'Show Solution' marker."
+                        try:
+                            response = model.generate_content(prompt)
+                            st.session_state.practice_problem = response.text
+                        except Exception as e:
+                            st.error(f"Error generating problem: {e}")
+
+            if 'practice_problem' in st.session_state and st.session_state.practice_problem:
+                st.markdown("---")
+                st.markdown(st.session_state.practice_problem)
+
+        with practice_tabs[1]: # Knowledge Quiz
+            st.markdown("### ❓ AI-Powered Knowledge Quiz")
+            st.markdown("Test your knowledge on any scientific topic.")
+
+            quiz_topic = st.text_input("Enter a topic for your quiz:", key="quiz_topic")
+            num_questions = st.slider("Number of questions:", 3, 10, 5)
+
+            if st.button("🚀 Start Quiz"):
+                if research_assistant and quiz_topic:
+                    with st.spinner(f"Creating a {num_questions}-question quiz on '{quiz_topic}'..."):
+                        prompt = f"Generate a {num_questions}-question multiple-choice quiz on the topic '{quiz_topic}'. For each question, provide 4 options (A, B, C, D) and indicate the correct answer separately at the end of the entire quiz block under a 'Answers:' heading."
+                        try:
+                            response = model.generate_content(prompt)
+                            st.session_state.practice_quiz = response.text
+                        except Exception as e:
+                            st.error(f"Error generating quiz: {e}")
+            
+            if 'practice_quiz' in st.session_state and st.session_state.practice_quiz:
+                st.markdown("---")
+                st.markdown(st.session_state.practice_quiz)
+
+        with practice_tabs[2]: # Data Interpretation
+            st.markdown("### 📊 Data Interpretation Challenge")
+            st.markdown("Practice interpreting charts, graphs, and experimental data.")
+
+            if st.button("📈 Generate Data Challenge"):
+                st.info("Generating a simulated data interpretation challenge...")
+                # Placeholder for a more complex data generation
+                df = pd.DataFrame({
+                    'Time (hours)': range(10),
+                    'Treatment A': [2.1, 2.5, 3.1, 3.8, 4.5, 5.1, 5.6, 6.0, 6.3, 6.5],
+                    'Treatment B': [2.0, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0]
+                })
+                fig = px.line(df, x='Time (hours)', y=['Treatment A', 'Treatment B'], title="Simulated Cell Growth Under Two Treatments", markers=True)
+                fig.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+                st.plotly_chart(fig, use_container_width=True)
+
+                st.markdown("#### Interpretation Questions:")
+                st.markdown("1. Describe the trend for Treatment A compared to Treatment B.")
+                st.markdown("2. At what time point is the difference between the two treatments the largest?")
+                st.markdown("3. What could be a possible hypothesis for this experiment?")
+                
+                with st.expander("Show AI Analysis"):
+                    st.markdown("""
+                    **1. Trend Description:** Treatment A shows exponential-like growth, indicating a strong positive effect on cell proliferation over time. In contrast, Treatment B exhibits slow, linear growth, suggesting it has a minimal or inhibitory effect compared to A.
+                    **2. Maximum Difference:** The difference is largest at the final time point (9 hours).
+                    **3. Hypothesis:** A plausible hypothesis could be: 'Treatment A, a novel growth factor, significantly enhances cell proliferation compared to Treatment B, the control substance.'
+                    """)
+
+    elif st.session_state.current_tool == "🛠️ Uni-Lab":
+        st.markdown("## 🛠️ Universal Laboratory")
+        st.markdown("A virtual workbench for simulations, experimental design, and protocol access.")
+
+        lab_tabs = st.tabs(["🔬 Virtual Experiments", "📜 Protocol Library", "🤖 Lab Assistant"])
+
+        with lab_tabs[0]: # Virtual Experiments
+            st.markdown("### 🔬 Virtual Experiments (Simulations)")
+            st.info("This section provides conceptual simulations of scientific experiments.")
+            
+            sim_type = st.selectbox("Choose a simulation type:", ["Titration Curve", "Population Dynamics (Lotka-Volterra)", "Projectile Motion"])
+
+            if sim_type == "Titration Curve":
+                st.markdown("#### Acid-Base Titration Simulation")
+                volume_added = st.slider("Volume of 0.1M NaOH added (mL)", 0.0, 50.0, 25.0, 0.1)
+                # Simplified pH calculation for a strong acid/strong base titration
+                if volume_added < 25.0:
+                    pH = -np.log10((25.0 - volume_added) / (25.0 + volume_added))
+                elif volume_added == 25.0:
+                    pH = 7.0
+                else:
+                    pH = 14.0 + np.log10((volume_added - 25.0) / (25.0 + volume_added))
+                
+                st.metric("Current pH", f"{pH:.2f}")
+                st.progress(volume_added / 50.0)
+
+        with lab_tabs[1]: # Protocol Library
+            st.markdown("### 📜 Protocol Library")
+            protocol_query = st.text_input("Search for a lab protocol (e.g., 'Western Blot', 'DNA Extraction')")
+            if protocol_query and research_assistant:
+                with st.spinner(f"Finding protocol for '{protocol_query}'..."):
+                    prompt = f"Provide a standard, step-by-step laboratory protocol for '{protocol_query}'. Include sections for Materials, Procedure, and Safety Precautions."
+                    response = model.generate_content(prompt)
+                    st.markdown(response.text)
+
+        with lab_tabs[2]: # Lab Assistant
+            st.markdown("### 🤖 AI Lab Assistant")
+            st.markdown("Ask for help with calculations, troubleshooting, or experimental design.")
+            lab_question = st.text_area("What do you need help with in the lab?")
+            if st.button("Ask Assistant"):
+                if lab_question and research_assistant:
+                    with st.spinner("Thinking..."):
+                        prompt = f"As an expert lab technician, answer the following question: {lab_question}"
+                        response = model.generate_content(prompt)
+                        st.markdown(response.text)
+
+    elif st.session_state.current_tool == "💾 Computation":
         st.markdown("## 💾 Computational Science Workbench")
         st.markdown("Perform data analysis, run models, and execute code in a sandboxed environment.")
 
@@ -3381,93 +3567,125 @@ print(f"The mean is: {mean}")""", height=200)
                     st.markdown("#### Output:")
                     st.code("The mean is: 30.0", language="text")
 
-    elif st.session_state.current_tool == "📊 History":
-        st.markdown("## 📊 Research History & Timeline")
-        st.markdown("Track your research journey and activity over time")
-        
-        # Time range selector
-        col_time1, col_time2 = st.columns(2)
-        with col_time1:
-            time_range = st.selectbox("Time Range", ["Last 7 Days", "Last 30 Days", "Last 3 Months", "Last Year", "All Time"])
-        with col_time2:
-            activity_filter = st.multiselect("Activity Type", ["Searches", "Papers Saved", "Notes", "Projects"])
-        
-        # Activity timeline
-        st.markdown("### ⏳ Activity Timeline")
-        
-        timeline_activities = []
-        
-        # Searches
-        if not activity_filter or "Searches" in activity_filter:
-            for search in st.session_state.search_history[-50:]:
-                timeline_activities.append({
-                    "type": "🔍 Search",
-                    "description": search['query'][:60],
-                    "timestamp": search['timestamp'],
-                    "data": search
-                })
-        
-        # Papers
-        if not activity_filter or "Papers Saved" in activity_filter:
-            for paper in st.session_state.library[-50:]:
-                if isinstance(paper, dict) and 'date' in paper:
-                    timeline_activities.append({ 
-                        "type": "📄 Paper",
-                        "description": paper.get('title', 'Untitled')[:60],
-                        "timestamp": paper['date'] + " 00:00:00",
-                        "data": paper
-                    })
-        
-        # Notes
-        if not activity_filter or "Notes" in activity_filter:
-            for note in st.session_state.notes[-50:]:
-                timeline_activities.append({
-                    "type": "📝 Note",
-                    "description": note.get('title', 'Untitled')[:60],
-                    "timestamp": note['date'],
-                    "data": note
-                })
-        
-        # Projects
-        if not activity_filter or "Projects" in activity_filter:
-            for project in st.session_state.projects:
-                timeline_activities.append({
-                    "type": "🔬 Project",
-                    "description": project['name'][:60],
-                    "timestamp": project['created'] + " 00:00:00",
-                    "data": project
-                })
-        
-        # Sort by timestamp
-        timeline_activities.sort(key=lambda x: x['timestamp'], reverse=True)
-        
-        # Display timeline
-        for activity in timeline_activities[:50]:
-            st.markdown(f"""
-            <div class="timeline-item">
-                <strong>{activity['type']}</strong>: {activity['description']}
-                <br><small>🕒 {activity['timestamp']}</small>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        # Statistics
-        st.markdown("---")
-        st.markdown("### 📈 Activity Statistics")
-        
-        col_s1, col_s2, col_s3, col_s4 = st.columns(4)
-        with col_s1:
-            st.metric("Total Searches", len(st.session_state.search_history))
-        with col_s2:
-            st.metric("Papers Saved", len(st.session_state.library))
-        with col_s3:
-            st.metric("Notes Created", len(st.session_state.notes))
-        with col_s4:
-            st.metric("Projects Started", len(st.session_state.projects))
-    else:
-        # Default view for any other tools that might be added
-        st.markdown(f"## {st.session_state.current_tool}")
-        st.info(f"The {st.session_state.current_tool} feature is under development. More functionality coming soon!")
+    # Default view for other tools
+    st.markdown(f"## {st.session_state.current_tool}")
+    st.info(f"The {st.session_state.current_tool} feature is under development. More functionality coming soon!")
+    
+    # Show some generic content based on tool
+    if "Explore" in st.session_state.current_tool: # 🌐
+        st.markdown("### 🌐 Explore Scientific Discoveries")
+        st.markdown("Discover, analyze, and connect with researchers from around the world.")
 
+        # Mock database of scholars
+        mock_scholars = [
+            {"id": "schen", "name": "Dr. Sarah Chen", "institution": "MIT", "field": "Computer Science", "interests": ["quantum computing", "machine learning", "algorithms"], "h_index": 45, "citations": 6800, "publications": [
+                {"title": "Quantum Error Correction with ML", "year": 2023, "citations": 250},
+                {"title": "Topological Quantum Computing", "year": 2021, "citations": 400},
+            ]},
+            {"id": "jrod", "name": "Prof. James Rodriguez", "institution": "Stanford University", "field": "Computer Science", "interests": ["artificial intelligence", "neural networks", "robotics"], "h_index": 52, "citations": 9200, "publications": [
+                {"title": "Self-improving AI Systems", "year": 2022, "citations": 310},
+                {"title": "Robotic Grasping Techniques", "year": 2020, "citations": 280},
+            ]},
+            {"id": "ewatson", "name": "Dr. Emily Watson", "institution": "Oxford University", "field": "Biology", "interests": ["genomics", "bioinformatics", "computational biology"], "h_index": 38, "citations": 5500, "publications": [
+                {"title": "CRISPR-Cas9 Off-target Analysis", "year": 2023, "citations": 180},
+                {"title": "Genomic Data Visualization", "year": 2021, "citations": 150},
+            ]},
+            {"id": "mzhag", "name": "Prof. Michael Zhang", "institution": "Tsinghua University", "field": "Chemistry", "interests": ["renewable energy", "materials science", "nanotechnology"], "h_index": 41, "citations": 7100, "publications": [
+                {"title": "Perovskite Solar Cell Stability", "year": 2022, "citations": 220},
+                {"title": "Nanomaterials for Catalysis", "year": 2020, "citations": 190},
+            ]},
+            {"id": "lmartinez", "name": "Dr. Laura Martinez", "institution": "ETH Zurich", "field": "Environmental Science", "interests": ["climate modeling", "data science", "environmental physics"], "h_index": 36, "citations": 4900, "publications": [
+                {"title": "High-Resolution Climate Models", "year": 2023, "citations": 160},
+                {"title": "Ocean Acidification Trends", "year": 2021, "citations": 140},
+            ]}
+        ]
+
+        scholar_tabs = st.tabs(["🔍 Search Scholars", "🏆 Leaderboards", "👥 My Network"])
+
+        with scholar_tabs[0]: # Search Scholars
+            st.markdown("### 🔍 Find a Scholar")
+            search_query = st.text_input("Search by name, institution, or research interest...", key="scholar_search")
+
+            if search_query:
+                results = [s for s in mock_scholars if search_query.lower() in s['name'].lower() or search_query.lower() in s['institution'].lower() or any(search_query.lower() in interest for interest in s['interests'])]
+            else:
+                results = mock_scholars
+
+            if not results:
+                st.warning("No scholars found matching your query.")
+            
+            for scholar in results:
+                with st.expander(f"**{scholar['name']}** - {scholar['institution']}"):
+                    st.markdown(f"#### {scholar['name']}")
+                    st.markdown(f"**Field:** {scholar['field']} | **Institution:** {scholar['institution']}")
+
+                    # Metrics
+                    col1, col2, col3 = st.columns(3)
+                    col1.metric("h-index", scholar['h_index'])
+                    col2.metric("Total Citations", f"{scholar['citations']:,}")
+                    col3.metric("Publications", len(scholar['publications']))
+
+                    # Interests
+                    st.markdown("**Research Interests:**")
+                    st.markdown('<div class="badge-container">', unsafe_allow_html=True)
+                    for interest in scholar['interests']:
+                        st.markdown(f'<span class="topic-badge">{interest}</span>', unsafe_allow_html=True)
+                    st.markdown('</div>', unsafe_allow_html=True)
+
+                    # Key Publications
+                    st.markdown("##### Key Publications")
+                    for pub in scholar['publications']:
+                        st.markdown(f"- **{pub['title']}** ({pub['year']}) - *{pub['citations']} citations*")
+
+                    # Publication Timeline
+                    st.markdown("##### Publication Velocity")
+                    pub_years = [p['year'] for p in scholar['publications']] + [2018, 2019] # Add some history
+                    year_counts = Counter(pub_years)
+                    df = pd.DataFrame(list(year_counts.items()), columns=['Year', 'Count']).sort_values('Year')
+                    
+                    fig = px.bar(df, x='Year', y='Count', title=f"Publications per Year for {scholar['name']}")
+                    fig.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+                    fig.update_traces(marker_color='#2ecc71')
+                    st.plotly_chart(fig, use_container_width=True)
+
+                    # Actions
+                    if st.button("🤝 Connect", key=f"connect_{scholar['id']}"):
+                        st.success(f"Connection request sent to {scholar['name']}! (simulation)")
+                    if st.button("👥 Add to My Network", key=f"track_{scholar['id']}"):
+                        if 'my_network' not in st.session_state:
+                            st.session_state.my_network = []
+                        if scholar not in st.session_state.my_network:
+                            st.session_state.my_network.append(scholar)
+                            save_state()
+                            st.success(f"{scholar['name']} added to your network.")
+                        else:
+                            st.info(f"{scholar['name']} is already in your network.")
+
+        with scholar_tabs[1]: # Leaderboards
+            st.markdown("### 🏆 Field Leaderboards")
+            st.markdown("Top researchers based on simulated metrics.")
+            
+            field_to_show = st.selectbox("Select a Field", list(set(s['field'] for s in mock_scholars)))
+            
+            scholars_in_field = sorted([s for s in mock_scholars if s['field'] == field_to_show], key=lambda x: x['citations'], reverse=True)
+            
+            for rank, scholar in enumerate(scholars_in_field, 1):
+                st.markdown(f"""
+                <div class="feature-card">
+                    <h4>{rank}. {scholar['name']} - {scholar['institution']}</h4>
+                    <p><span class="citation-badge">Citations: {scholar['citations']:,}</span> | <span class="citation-badge">h-index: {scholar['h_index']}</span></p>
+                </div>
+                """, unsafe_allow_html=True)
+
+        with scholar_tabs[2]: # My Network
+            st.markdown("### 👥 My Scholar Network")
+            st.markdown("Researchers you are tracking.")
+
+            if 'my_network' in st.session_state and st.session_state.my_network:
+                for scholar in st.session_state.my_network:
+                    st.markdown(f"- **{scholar['name']}** ({scholar['institution']})")
+            else:
+                st.info("You are not tracking any scholars yet. Add scholars from the 'Search Scholars' tab.")
 
 # Display Bohrium Philosophy from markdown file
 st.markdown("---")
@@ -3482,16 +3700,16 @@ except FileNotFoundError:
 st.markdown("---")
 col_f1, col_f2, col_f3 = st.columns(3)
 with col_f1:
-    if st.button("💾 Save Progress", use_container_width=True):
+    if st.button("ðŸ'¾ Save Progress", use_container_width=True):
         save_state()
 with col_f2:
-    if st.button("🔄 Reset Session", use_container_width=True):
+    if st.button("ðŸ„ Reset Session", use_container_width=True):
         if st.checkbox("Confirm reset"):
             for key in list(st.session_state.keys()):
                 del st.session_state[key]
             st.rerun()
 with col_f3:
-    if st.button("⚙️ Settings", use_container_width=True):
+    if st.button("ðŸ§ Settings", use_container_width=True):
         st.info("Settings panel coming soon")
 
 st.markdown("""
