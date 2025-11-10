@@ -3322,6 +3322,251 @@ Format each paper clearly, separated by '---'. Example:
                 st.markdown(f"### Recent Developments in {field_choice}")
                 st.markdown(response.text)
 else:
+    # This block handles the newly implemented tools
+    if st.session_state.current_tool == "📖 Knowledge Base":
+        st.markdown("## 📖 Scientific Knowledge Base")
+        st.markdown("An AI-curated encyclopedia of scientific concepts, principles, and methodologies.")
+
+        kb_tabs = st.tabs(["🔍 Concept Explorer", "🔬 Methodology Guide", "📚 Curated Topics"])
+
+        with kb_tabs[0]: # Concept Explorer
+            st.markdown("### 🔍 Concept Explorer")
+            concept_query = st.text_input("Enter a scientific concept to learn about (e.g., 'Quantum Entanglement', 'Photosynthesis')", key="kb_concept_query")
+
+            if concept_query:
+                if research_assistant:
+                    with st.spinner(f"🧠 Generating a detailed explanation for '{concept_query}'..."):
+                        prompt = f"""Provide a comprehensive, educational explanation of the scientific concept: '{concept_query}'.
+
+Structure your response with the following sections:
+- **Overview:** A concise summary of the concept.
+- **Core Principles:** The fundamental ideas and mechanisms.
+- **Historical Context:** Key discoveries and scientists involved.
+- **Applications & Importance:** Why this concept matters in science and technology.
+- **Related Concepts:** Connections to other scientific ideas.
+
+Use clear language, analogies, and provide a 'For Further Reading' section with 2-3 landmark papers."""
+                        try:
+                            response = model.generate_content(prompt)
+                            st.markdown(response.text)
+                        except Exception as e:
+                            st.error(f"Error generating explanation: {e}")
+                else:
+                    st.error("Research assistant is not available.")
+
+        with kb_tabs[1]: # Methodology Guide
+            st.markdown("### 🔬 Methodology Guide")
+            method_query = st.text_input("Search for a research methodology (e.g., 'PCR', 'Mass Spectrometry', 'Systematic Review')", key="kb_method_query")
+
+            if method_query:
+                if research_assistant:
+                    with st.spinner(f"🔬 Detailing the methodology for '{method_query}'..."):
+                        prompt = f"""Create a guide for the research methodology: '{method_query}'.
+
+Include the following sections:
+- **Principle:** How does it work?
+- **Step-by-Step Protocol:** A general procedure outline.
+- **Applications:** What is it used for?
+- **Strengths & Limitations:** Pros and cons of the method.
+- **Data Analysis:** How to interpret the results.
+- **Common Pitfalls:** What to watch out for."""
+                        try:
+                            response = model.generate_content(prompt)
+                            st.markdown(response.text)
+                        except Exception as e:
+                            st.error(f"Error generating guide: {e}")
+                else:
+                    st.error("Research assistant is not available.")
+
+        with kb_tabs[2]: # Curated Topics
+            st.markdown("### 📚 Curated Topics")
+            st.markdown("Explore foundational topics curated by Bohrium AI.")
+            curated_topics = ["General Relativity", "DNA Replication", "Neural Networks", "The Standard Model of Particle Physics", "Thermodynamics"]
+            
+            for topic in curated_topics:
+                if st.button(topic, use_container_width=True):
+                    st.session_state.kb_concept_query = topic
+                    st.info(f"Switched to 'Concept Explorer' for '{topic}'. Please check the first tab.")
+
+    elif st.session_state.current_tool == "🎯 Practice":
+        st.markdown("## 🎯 Research Practice & Skill Development")
+        st.markdown("Sharpen your scientific acumen with AI-generated challenges and quizzes.")
+
+        practice_tabs = st.tabs(["🧩 Problem Solver", "❓ Knowledge Quiz", "📊 Data Interpretation"])
+
+        with practice_tabs[0]: # Problem Solver
+            st.markdown("### 🧩 Problem Solver Arena")
+            st.markdown("Test your ability to solve complex scientific problems.")
+            
+            problem_field = st.selectbox("Select a field for your problem:", ["Physics", "Chemistry", "Biology", "Computer Science", "Logic"])
+            problem_difficulty = st.select_slider("Select difficulty:", ["High School", "Undergraduate", "Graduate", "Post-doc"])
+
+            if st.button("🎲 Generate New Problem"):
+                if research_assistant:
+                    with st.spinner(f"Generating a {problem_difficulty}-level problem in {problem_field}..."):
+                        prompt = f"Generate a single, challenging, {problem_difficulty}-level scientific problem in the field of {problem_field}. Provide the problem statement clearly, then hide the solution behind a 'Show Solution' marker."
+                        try:
+                            response = model.generate_content(prompt)
+                            st.session_state.practice_problem = response.text
+                        except Exception as e:
+                            st.error(f"Error generating problem: {e}")
+
+            if 'practice_problem' in st.session_state and st.session_state.practice_problem:
+                st.markdown("---")
+                st.markdown(st.session_state.practice_problem)
+
+        with practice_tabs[1]: # Knowledge Quiz
+            st.markdown("### ❓ AI-Powered Knowledge Quiz")
+            st.markdown("Test your knowledge on any scientific topic.")
+
+            quiz_topic = st.text_input("Enter a topic for your quiz:", key="quiz_topic")
+            num_questions = st.slider("Number of questions:", 3, 10, 5)
+
+            if st.button("🚀 Start Quiz"):
+                if research_assistant and quiz_topic:
+                    with st.spinner(f"Creating a {num_questions}-question quiz on '{quiz_topic}'..."):
+                        prompt = f"Generate a {num_questions}-question multiple-choice quiz on the topic '{quiz_topic}'. For each question, provide 4 options (A, B, C, D) and indicate the correct answer separately at the end of the entire quiz block under a 'Answers:' heading."
+                        try:
+                            response = model.generate_content(prompt)
+                            st.session_state.practice_quiz = response.text
+                        except Exception as e:
+                            st.error(f"Error generating quiz: {e}")
+            
+            if 'practice_quiz' in st.session_state and st.session_state.practice_quiz:
+                st.markdown("---")
+                st.markdown(st.session_state.practice_quiz)
+
+        with practice_tabs[2]: # Data Interpretation
+            st.markdown("### 📊 Data Interpretation Challenge")
+            st.markdown("Practice interpreting charts, graphs, and experimental data.")
+
+            if st.button("📈 Generate Data Challenge"):
+                st.info("Generating a simulated data interpretation challenge...")
+                # Placeholder for a more complex data generation
+                df = pd.DataFrame({
+                    'Time (hours)': range(10),
+                    'Treatment A': [2.1, 2.5, 3.1, 3.8, 4.5, 5.1, 5.6, 6.0, 6.3, 6.5],
+                    'Treatment B': [2.0, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0]
+                })
+                fig = px.line(df, x='Time (hours)', y=['Treatment A', 'Treatment B'], title="Simulated Cell Growth Under Two Treatments", markers=True)
+                fig.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+                st.plotly_chart(fig, use_container_width=True)
+
+                st.markdown("#### Interpretation Questions:")
+                st.markdown("1. Describe the trend for Treatment A compared to Treatment B.")
+                st.markdown("2. At what time point is the difference between the two treatments the largest?")
+                st.markdown("3. What could be a possible hypothesis for this experiment?")
+                
+                with st.expander("Show AI Analysis"):
+                    st.markdown("""
+                    **1. Trend Description:** Treatment A shows exponential-like growth, indicating a strong positive effect on cell proliferation over time. In contrast, Treatment B exhibits slow, linear growth, suggesting it has a minimal or inhibitory effect compared to A.
+                    **2. Maximum Difference:** The difference is largest at the final time point (9 hours).
+                    **3. Hypothesis:** A plausible hypothesis could be: 'Treatment A, a novel growth factor, significantly enhances cell proliferation compared to Treatment B, the control substance.'
+                    """)
+
+    elif st.session_state.current_tool == "🛠️ Uni-Lab":
+        st.markdown("## 🛠️ Universal Laboratory")
+        st.markdown("A virtual workbench for simulations, experimental design, and protocol access.")
+
+        lab_tabs = st.tabs(["🔬 Virtual Experiments", "📜 Protocol Library", "🤖 Lab Assistant"])
+
+        with lab_tabs[0]: # Virtual Experiments
+            st.markdown("### 🔬 Virtual Experiments (Simulations)")
+            st.info("This section provides conceptual simulations of scientific experiments.")
+            
+            sim_type = st.selectbox("Choose a simulation type:", ["Titration Curve", "Population Dynamics (Lotka-Volterra)", "Projectile Motion"])
+
+            if sim_type == "Titration Curve":
+                st.markdown("#### Acid-Base Titration Simulation")
+                volume_added = st.slider("Volume of 0.1M NaOH added (mL)", 0.0, 50.0, 25.0, 0.1)
+                # Simplified pH calculation for a strong acid/strong base titration
+                if volume_added < 25.0:
+                    pH = -np.log10((25.0 - volume_added) / (25.0 + volume_added))
+                elif volume_added == 25.0:
+                    pH = 7.0
+                else:
+                    pH = 14.0 + np.log10((volume_added - 25.0) / (25.0 + volume_added))
+                
+                st.metric("Current pH", f"{pH:.2f}")
+                st.progress(volume_added / 50.0)
+
+        with lab_tabs[1]: # Protocol Library
+            st.markdown("### 📜 Protocol Library")
+            protocol_query = st.text_input("Search for a lab protocol (e.g., 'Western Blot', 'DNA Extraction')")
+            if protocol_query and research_assistant:
+                with st.spinner(f"Finding protocol for '{protocol_query}'..."):
+                    prompt = f"Provide a standard, step-by-step laboratory protocol for '{protocol_query}'. Include sections for Materials, Procedure, and Safety Precautions."
+                    response = model.generate_content(prompt)
+                    st.markdown(response.text)
+
+        with lab_tabs[2]: # Lab Assistant
+            st.markdown("### 🤖 AI Lab Assistant")
+            st.markdown("Ask for help with calculations, troubleshooting, or experimental design.")
+            lab_question = st.text_area("What do you need help with in the lab?")
+            if st.button("Ask Assistant"):
+                if lab_question and research_assistant:
+                    with st.spinner("Thinking..."):
+                        prompt = f"As an expert lab technician, answer the following question: {lab_question}"
+                        response = model.generate_content(prompt)
+                        st.markdown(response.text)
+
+    elif st.session_state.current_tool == "💾 Computation":
+        st.markdown("## 💾 Computational Science Workbench")
+        st.markdown("Perform data analysis, run models, and execute code in a sandboxed environment.")
+
+        comp_tabs = st.tabs(["🧮 Statistical Calculator", "📈 Plotting Tool", "🐍 Python Sandbox"])
+
+        with comp_tabs[0]: # Statistical Calculator
+            st.markdown("### 🧮 Quick Statistical Calculator")
+            data_input = st.text_area("Enter comma-separated numerical data:", "2, 3, 3, 4, 5, 5, 5, 6, 7, 8")
+            if data_input:
+                try:
+                    data = [float(x.strip()) for x in data_input.split(',')]
+                    df = pd.Series(data)
+                    st.markdown("#### Descriptive Statistics:")
+                    st.dataframe(df.describe())
+                except ValueError:
+                    st.error("Please enter valid numerical data.")
+
+        with comp_tabs[1]: # Plotting Tool
+            st.markdown("### 📈 Simple Plotting Tool")
+            st.info("Upload a CSV file to generate plots.")
+            uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
+            if uploaded_file is not None:
+                df = pd.read_csv(uploaded_file)
+                st.dataframe(df.head())
+                
+                plot_type = st.selectbox("Plot Type", ["Scatter", "Line", "Bar", "Histogram"])
+                
+                if plot_type in ["Scatter", "Line", "Bar"]:
+                    x_axis = st.selectbox("X-axis", df.columns)
+                    y_axis = st.selectbox("Y-axis", df.columns)
+                    if x_axis and y_axis:
+                        if plot_type == "Scatter": fig = px.scatter(df, x=x_axis, y=y_axis)
+                        elif plot_type == "Line": fig = px.line(df, x=x_axis, y=y_axis)
+                        elif plot_type == "Bar": fig = px.bar(df, x=x_axis, y=y_axis)
+                        fig.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+                        st.plotly_chart(fig, use_container_width=True)
+                elif plot_type == "Histogram":
+                    col = st.selectbox("Select column for histogram", df.columns)
+                    if col:
+                        fig = px.histogram(df, x=col)
+                        fig.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+                        st.plotly_chart(fig, use_container_width=True)
+
+        with comp_tabs[2]: # Python Sandbox
+            st.markdown("### 🐍 Python Sandbox")
+            st.warning("⚠️ Code execution is simulated for demonstration purposes.")
+            code = st.text_area("Write Python code here (uses pandas as 'pd', numpy as 'np')", 
+                                value="""# Example: Calculate the mean of a sample dataset
+data = [10, 20, 30, 40, 50]
+mean = np.mean(data)
+print(f"The mean is: {mean}")""", height=200)
+            if st.button("▶️ Run Code"):
+                with st.spinner("Executing code..."):
+                    st.markdown("#### Output:")
+                    st.code("The mean is: 30.0", language="text")
+
     # Default view for other tools
     st.markdown(f"## {st.session_state.current_tool}")
     st.info(f"The {st.session_state.current_tool} feature is under development. More functionality coming soon!")
@@ -3329,12 +3574,6 @@ else:
     # Show some generic content based on tool
     if "Explore" in st.session_state.current_tool: # 🌐
         st.markdown("### 🌐 Explore Scientific Discoveries")
-        st.markdown("- Browse trending papers")
-        st.markdown("- Discover research topics")
-        st.markdown("- Follow research areas")
-    
-    elif st.session_state.current_tool == "👨‍🎓 Scholars":
-        st.markdown("## 👨‍🎓 Scholar Profiles & Analytics")
         st.markdown("Discover, analyze, and connect with researchers from around the world.")
 
         # Mock database of scholars
@@ -3447,36 +3686,6 @@ else:
                     st.markdown(f"- **{scholar['name']}** ({scholar['institution']})")
             else:
                 st.info("You are not tracking any scholars yet. Add scholars from the 'Search Scholars' tab.")
-
-    elif "Scholars" in st.session_state.current_tool: # 👨‍🎓
-        st.markdown("### 👨‍🎓 Scholar Profiles")
-        st.markdown("- View researcher profiles")
-        st.markdown("- Track publications")
-        st.markdown("- Analyze research impact")
-    
-    elif "Knowledge Base" in st.session_state.current_tool: # 📖
-        st.markdown("### 📖 Scientific Knowledge Base")
-        st.markdown("- Access curated knowledge")
-        st.markdown("- Learn scientific concepts")
-        st.markdown("- Explore methodologies")
-    
-    elif "Practice" in st.session_state.current_tool: # 🎯
-        st.markdown("### 🎯 Research Practice Tools")
-        st.markdown("- Practice problem solving")
-        st.markdown("- Test your knowledge")
-        st.markdown("- Improve research skills")
-    
-    elif "Uni-Lab" in st.session_state.current_tool: # 🛠️
-        st.markdown("### 🛠️ Universal Laboratory")
-        st.markdown("- Virtual experiments")
-        st.markdown("- Simulation tools")
-        st.markdown("- Lab protocols")
-    
-    elif "Computation" in st.session_state.current_tool: # 💾
-        st.markdown("### 💾 Computational Tools")
-        st.markdown("- Data analysis")
-        st.markdown("- Statistical computing")
-        st.markdown("- Machine learning models")
 
 # Display Bohrium Philosophy from markdown file
 st.markdown("---")
