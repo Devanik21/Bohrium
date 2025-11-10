@@ -3460,12 +3460,6 @@ else:
         st.markdown("- Learn scientific concepts")
         st.markdown("- Explore methodologies")
     
-    elif "Subscription" in st.session_state.current_tool: # 📋
-        st.markdown("### 📋 Manage Your Subscriptions")
-        st.markdown("- Subscribe to journals")
-        st.markdown("- Get alerts for new papers")
-        st.markdown("- Follow researchers")
-
     elif "Practice" in st.session_state.current_tool: # 🎯
         st.markdown("### 🎯 Research Practice Tools")
         st.markdown("- Practice problem solving")
