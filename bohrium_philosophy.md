@@ -99,7 +99,7 @@ This is your symbiotic network. It connects you with the global community of min
 
 ---
 
-## <span style="color: #2ecc71;">🤖 The Augmented Scientist: A New Symbiosis</span>
+## <span style="color: #2ecc71;">♾️ The Augmented Scientist: A New Symbiosis</span>
 
 The introduction of an instrument as powerful as Bohrium does not diminish the role of the human scientist; it **elevates** it. By automating the exhaustive, often soul-crushing work of literature review, data collation, and preliminary analysis, Bohrium liberates the human mind for its highest and most irreplaceable purpose: to ask deeper questions, to exercise intuition, to challenge established dogma, and to dare to explore the truly unknown.
 
@@ -241,7 +241,7 @@ Furthermore, Bohrium is architected to **democratize access** to the frontier of
 - Pharmaceutical companies running drug discovery on quantum systems
 - **Market size: $1.5B → $8.6B by 2030**
 
-**Artificial Intelligence (2026)** 🤖
+**Artificial Intelligence (2026)** ♾️
 - AI systems achieving 99%+ accuracy on specialized scientific tasks
 - Real-time analysis of live experimental data
 - AI co-authorship on 10%+ of published papers
@@ -287,7 +287,7 @@ Bohrium is not just a tool; it is a <strong style="color: #2ecc71;">paradigm shi
 ⚛️ Quantum-powered insights
 </p>
 <p style="color: #f39c12; font-size: 1.1rem; font-weight: 400;">
-🤖 AI-augmented research assistant
+♾️ AI-augmented research assistant
 </p>
 <p style="color: #9b59b6; font-size: 1.1rem; font-weight: 400;">
 👥 20M+ collaborators worldwide
@@ -321,3 +321,4 @@ Bohrium © 2025 | Powered by AI • Guided by Scientists • Built for Discovery
 </div>
 
 </div>
+
