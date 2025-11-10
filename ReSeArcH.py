@@ -685,6 +685,8 @@ class ResearchAssistant:
             return [{'description': f"Error: {str(e)}", 'generated_at': ''}]
 
 # Initialize session state with advanced features
+# ... (starts around line 600)
+
 if 'state_loaded' not in st.session_state:
     db = TinyDB('bohrium_db.json')
     user_data_table = db.table('user_data')
@@ -699,7 +701,10 @@ if 'state_loaded' not in st.session_state:
         st.session_state.collections = saved_data.get('collections', []) if isinstance(saved_data.get('collections'), list) else []
         st.session_state.reading_list = saved_data.get('reading_list', []) if isinstance(saved_data.get('reading_list'), list) else []
         st.session_state.notes = saved_data.get('notes', []) if isinstance(saved_data.get('notes'), list) else []
+        
+        # This is the key line that prevents your error:
         st.session_state.projects = saved_data.get('projects', []) if isinstance(saved_data.get('projects'), list) else []
+        
         st.session_state.annotations = saved_data.get('annotations', {}) if isinstance(saved_data.get('annotations'), dict) else {}
         st.session_state.research_profile = saved_data.get('research_profile', {}) if isinstance(saved_data.get('research_profile'), dict) else {}
         st.session_state.collaborations = saved_data.get('collaborations', []) if isinstance(saved_data.get('collaborations'), list) else []
@@ -715,7 +720,7 @@ if 'state_loaded' not in st.session_state:
         st.session_state.collections = []
         st.session_state.reading_list = []
         st.session_state.notes = []
-        st.session_state.projects = []
+        st.session_state.projects = [] # This is also correct
         st.session_state.annotations = {}
         st.session_state.research_profile = {
             'interests': [],
@@ -730,6 +735,8 @@ if 'state_loaded' not in st.session_state:
         st.session_state.data_sets = []
 
     st.session_state.state_loaded = True
+
+# ... (rest of your file)
 
 def save_state():
     """Saves the current session state to the database."""
