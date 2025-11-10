@@ -3328,7 +3328,6 @@ else:
         st.markdown("- Follow research areas")
     
     elif "Subscription" in st.session_state.current_tool: # 📋
-    if "Subscription" in st.session_state.current_tool: # 📋
         st.markdown("### 📋 Manage Your Subscriptions")
         st.markdown("- Subscribe to journals")
         st.markdown("- Get alerts for new papers")
