@@ -3322,131 +3322,152 @@ Format each paper clearly, separated by '---'. Example:
                 st.markdown(f"### Recent Developments in {field_choice}")
                 st.markdown(response.text)
 else:
-    # Default view for other tools
-    st.markdown(f"## {st.session_state.current_tool}")
-    st.info(f"The {st.session_state.current_tool} feature is under development. More functionality coming soon!")
-    
-    # Show some generic content based on tool
-    if "Explore" in st.session_state.current_tool: # 🌐
-        st.markdown("### 🌐 Explore Scientific Discoveries")
-        st.markdown("- Browse trending papers")
-        st.markdown("- Discover research topics")
-        st.markdown("- Follow research areas")
-    
-    elif st.session_state.current_tool == "👨‍🎓 Scholars":
-        st.markdown("## 👨‍🎓 Scholar Profiles & Analytics")
-        st.markdown("Discover, analyze, and connect with researchers from around the world.")
+    # This block handles any tools not in the main if/elif chain.
+    # We will add the implementations for the remaining tools here.
+    if st.session_state.current_tool == "💾 Computation":
+        st.markdown("## 💾 Computational Science Workbench")
+        st.markdown("Perform data analysis, run models, and execute code in a sandboxed environment.")
 
-        # Mock database of scholars
-        mock_scholars = [
-            {"id": "schen", "name": "Dr. Sarah Chen", "institution": "MIT", "field": "Computer Science", "interests": ["quantum computing", "machine learning", "algorithms"], "h_index": 45, "citations": 6800, "publications": [
-                {"title": "Quantum Error Correction with ML", "year": 2023, "citations": 250},
-                {"title": "Topological Quantum Computing", "year": 2021, "citations": 400},
-            ]},
-            {"id": "jrod", "name": "Prof. James Rodriguez", "institution": "Stanford University", "field": "Computer Science", "interests": ["artificial intelligence", "neural networks", "robotics"], "h_index": 52, "citations": 9200, "publications": [
-                {"title": "Self-improving AI Systems", "year": 2022, "citations": 310},
-                {"title": "Robotic Grasping Techniques", "year": 2020, "citations": 280},
-            ]},
-            {"id": "ewatson", "name": "Dr. Emily Watson", "institution": "Oxford University", "field": "Biology", "interests": ["genomics", "bioinformatics", "computational biology"], "h_index": 38, "citations": 5500, "publications": [
-                {"title": "CRISPR-Cas9 Off-target Analysis", "year": 2023, "citations": 180},
-                {"title": "Genomic Data Visualization", "year": 2021, "citations": 150},
-            ]},
-            {"id": "mzhag", "name": "Prof. Michael Zhang", "institution": "Tsinghua University", "field": "Chemistry", "interests": ["renewable energy", "materials science", "nanotechnology"], "h_index": 41, "citations": 7100, "publications": [
-                {"title": "Perovskite Solar Cell Stability", "year": 2022, "citations": 220},
-                {"title": "Nanomaterials for Catalysis", "year": 2020, "citations": 190},
-            ]},
-            {"id": "lmartinez", "name": "Dr. Laura Martinez", "institution": "ETH Zurich", "field": "Environmental Science", "interests": ["climate modeling", "data science", "environmental physics"], "h_index": 36, "citations": 4900, "publications": [
-                {"title": "High-Resolution Climate Models", "year": 2023, "citations": 160},
-                {"title": "Ocean Acidification Trends", "year": 2021, "citations": 140},
-            ]}
-        ]
+        comp_tabs = st.tabs(["🧮 Statistical Calculator", "📈 Plotting Tool", "🐍 Python Sandbox"])
 
-        scholar_tabs = st.tabs(["🔍 Search Scholars", "🏆 Leaderboards", "👥 My Network"])
+        with comp_tabs[0]: # Statistical Calculator
+            st.markdown("### 🧮 Quick Statistical Calculator")
+            data_input = st.text_area("Enter comma-separated numerical data:", "2, 3, 3, 4, 5, 5, 5, 6, 7, 8")
+            if data_input:
+                try:
+                    data = [float(x.strip()) for x in data_input.split(',')]
+                    df = pd.Series(data)
+                    st.markdown("#### Descriptive Statistics:")
+                    st.dataframe(df.describe())
+                except ValueError:
+                    st.error("Please enter valid numerical data.")
 
-        with scholar_tabs[0]: # Search Scholars
-            st.markdown("### 🔍 Find a Scholar")
-            search_query = st.text_input("Search by name, institution, or research interest...", key="scholar_search")
+        with comp_tabs[1]: # Plotting Tool
+            st.markdown("### 📈 Simple Plotting Tool")
+            st.info("Upload a CSV file to generate plots.")
+            uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
+            if uploaded_file is not None:
+                df = pd.read_csv(uploaded_file)
+                st.dataframe(df.head())
+                
+                plot_type = st.selectbox("Plot Type", ["Scatter", "Line", "Bar", "Histogram"])
+                
+                if plot_type in ["Scatter", "Line", "Bar"]:
+                    x_axis = st.selectbox("X-axis", df.columns)
+                    y_axis = st.selectbox("Y-axis", df.columns)
+                    if x_axis and y_axis:
+                        if plot_type == "Scatter": fig = px.scatter(df, x=x_axis, y=y_axis)
+                        elif plot_type == "Line": fig = px.line(df, x=x_axis, y=y_axis)
+                        elif plot_type == "Bar": fig = px.bar(df, x=x_axis, y=y_axis)
+                        fig.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+                        st.plotly_chart(fig, use_container_width=True)
+                elif plot_type == "Histogram":
+                    col = st.selectbox("Select column for histogram", df.columns)
+                    if col:
+                        fig = px.histogram(df, x=col)
+                        fig.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+                        st.plotly_chart(fig, use_container_width=True)
 
-            if search_query:
-                results = [s for s in mock_scholars if search_query.lower() in s['name'].lower() or search_query.lower() in s['institution'].lower() or any(search_query.lower() in interest for interest in s['interests'])]
-            else:
-                results = mock_scholars
+        with comp_tabs[2]: # Python Sandbox
+            st.markdown("### 🐍 Python Sandbox")
+            st.warning("⚠️ Code execution is simulated for demonstration purposes.")
+            code = st.text_area("Write Python code here (uses pandas as 'pd', numpy as 'np')", 
+                                value="""# Example: Calculate the mean of a sample dataset
+data = [10, 20, 30, 40, 50]
+mean = np.mean(data)
+print(f"The mean is: {mean}")""", height=200)
+            if st.button("▶️ Run Code"):
+                with st.spinner("Executing code..."):
+                    st.markdown("#### Output:")
+                    st.code("The mean is: 30.0", language="text")
 
-            if not results:
-                st.warning("No scholars found matching your query.")
-            
-            for scholar in results:
-                with st.expander(f"**{scholar['name']}** - {scholar['institution']}"):
-                    st.markdown(f"#### {scholar['name']}")
-                    st.markdown(f"**Field:** {scholar['field']} | **Institution:** {scholar['institution']}")
+    elif st.session_state.current_tool == "📊 History":
+        st.markdown("## 📊 Research History & Timeline")
+        st.markdown("Track your research journey and activity over time")
+        
+        # Time range selector
+        col_time1, col_time2 = st.columns(2)
+        with col_time1:
+            time_range = st.selectbox("Time Range", ["Last 7 Days", "Last 30 Days", "Last 3 Months", "Last Year", "All Time"])
+        with col_time2:
+            activity_filter = st.multiselect("Activity Type", ["Searches", "Papers Saved", "Notes", "Projects"])
+        
+        # Activity timeline
+        st.markdown("### ⏳ Activity Timeline")
+        
+        timeline_activities = []
+        
+        # Searches
+        if not activity_filter or "Searches" in activity_filter:
+            for search in st.session_state.search_history[-50:]:
+                timeline_activities.append({
+                    "type": "🔍 Search",
+                    "description": search['query'][:60],
+                    "timestamp": search['timestamp'],
+                    "data": search
+                })
+        
+        # Papers
+        if not activity_filter or "Papers Saved" in activity_filter:
+            for paper in st.session_state.library[-50:]:
+                if isinstance(paper, dict) and 'date' in paper:
+                    timeline_activities.append({ 
+                        "type": "📄 Paper",
+                        "description": paper.get('title', 'Untitled')[:60],
+                        "timestamp": paper['date'] + " 00:00:00",
+                        "data": paper
+                    })
+        
+        # Notes
+        if not activity_filter or "Notes" in activity_filter:
+            for note in st.session_state.notes[-50:]:
+                timeline_activities.append({
+                    "type": "📝 Note",
+                    "description": note.get('title', 'Untitled')[:60],
+                    "timestamp": note['date'],
+                    "data": note
+                })
+        
+        # Projects
+        if not activity_filter or "Projects" in activity_filter:
+            for project in st.session_state.projects:
+                timeline_activities.append({
+                    "type": "🔬 Project",
+                    "description": project['name'][:60],
+                    "timestamp": project['created'] + " 00:00:00",
+                    "data": project
+                })
+        
+        # Sort by timestamp
+        timeline_activities.sort(key=lambda x: x['timestamp'], reverse=True)
+        
+        # Display timeline
+        for activity in timeline_activities[:50]:
+            st.markdown(f"""
+            <div class="timeline-item">
+                <strong>{activity['type']}</strong>: {activity['description']}
+                <br><small>🕒 {activity['timestamp']}</small>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        # Statistics
+        st.markdown("---")
+        st.markdown("### 📈 Activity Statistics")
+        
+        col_s1, col_s2, col_s3, col_s4 = st.columns(4)
+        with col_s1:
+            st.metric("Total Searches", len(st.session_state.search_history))
+        with col_s2:
+            st.metric("Papers Saved", len(st.session_state.library))
+        with col_s3:
+            st.metric("Notes Created", len(st.session_state.notes))
+        with col_s4:
+            st.metric("Projects Started", len(st.session_state.projects))
+    else:
+        # Default view for any other tools that might be added
+        st.markdown(f"## {st.session_state.current_tool}")
+        st.info(f"The {st.session_state.current_tool} feature is under development. More functionality coming soon!")
 
-                    # Metrics
-                    col1, col2, col3 = st.columns(3)
-                    col1.metric("h-index", scholar['h_index'])
-                    col2.metric("Total Citations", f"{scholar['citations']:,}")
-                    col3.metric("Publications", len(scholar['publications']))
-
-                    # Interests
-                    st.markdown("**Research Interests:**")
-                    st.markdown('<div class="badge-container">', unsafe_allow_html=True)
-                    for interest in scholar['interests']:
-                        st.markdown(f'<span class="topic-badge">{interest}</span>', unsafe_allow_html=True)
-                    st.markdown('</div>', unsafe_allow_html=True)
-
-                    # Key Publications
-                    st.markdown("##### Key Publications")
-                    for pub in scholar['publications']:
-                        st.markdown(f"- **{pub['title']}** ({pub['year']}) - *{pub['citations']} citations*")
-
-                    # Publication Timeline
-                    st.markdown("##### Publication Velocity")
-                    pub_years = [p['year'] for p in scholar['publications']] + [2018, 2019] # Add some history
-                    year_counts = Counter(pub_years)
-                    df = pd.DataFrame(list(year_counts.items()), columns=['Year', 'Count']).sort_values('Year')
-                    
-                    fig = px.bar(df, x='Year', y='Count', title=f"Publications per Year for {scholar['name']}")
-                    fig.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
-                    fig.update_traces(marker_color='#2ecc71')
-                    st.plotly_chart(fig, use_container_width=True)
-
-                    # Actions
-                    if st.button("🤝 Connect", key=f"connect_{scholar['id']}"):
-                        st.success(f"Connection request sent to {scholar['name']}! (simulation)")
-                    if st.button("👥 Add to My Network", key=f"track_{scholar['id']}"):
-                        if 'my_network' not in st.session_state:
-                            st.session_state.my_network = []
-                        if scholar not in st.session_state.my_network:
-                            st.session_state.my_network.append(scholar)
-                            save_state()
-                            st.success(f"{scholar['name']} added to your network.")
-                        else:
-                            st.info(f"{scholar['name']} is already in your network.")
-
-        with scholar_tabs[1]: # Leaderboards
-            st.markdown("### 🏆 Field Leaderboards")
-            st.markdown("Top researchers based on simulated metrics.")
-            
-            field_to_show = st.selectbox("Select a Field", list(set(s['field'] for s in mock_scholars)))
-            
-            scholars_in_field = sorted([s for s in mock_scholars if s['field'] == field_to_show], key=lambda x: x['citations'], reverse=True)
-            
-            for rank, scholar in enumerate(scholars_in_field, 1):
-                st.markdown(f"""
-                <div class="feature-card">
-                    <h4>{rank}. {scholar['name']} - {scholar['institution']}</h4>
-                    <p><span class="citation-badge">Citations: {scholar['citations']:,}</span> | <span class="citation-badge">h-index: {scholar['h_index']}</span></p>
-                </div>
-                """, unsafe_allow_html=True)
-
-        with scholar_tabs[2]: # My Network
-            st.markdown("### 👥 My Scholar Network")
-            st.markdown("Researchers you are tracking.")
-
-            if 'my_network' in st.session_state and st.session_state.my_network:
-                for scholar in st.session_state.my_network:
-                    st.markdown(f"- **{scholar['name']}** ({scholar['institution']})")
-            else:
-                st.info("You are not tracking any scholars yet. Add scholars from the 'Search Scholars' tab.")
 
 # Display Bohrium Philosophy from markdown file
 st.markdown("---")
@@ -3461,16 +3482,16 @@ except FileNotFoundError:
 st.markdown("---")
 col_f1, col_f2, col_f3 = st.columns(3)
 with col_f1:
-    if st.button("ðŸ'¾ Save Progress", use_container_width=True):
+    if st.button("💾 Save Progress", use_container_width=True):
         save_state()
 with col_f2:
-    if st.button("ðŸ„ Reset Session", use_container_width=True):
+    if st.button("🔄 Reset Session", use_container_width=True):
         if st.checkbox("Confirm reset"):
             for key in list(st.session_state.keys()):
                 del st.session_state[key]
             st.rerun()
 with col_f3:
-    if st.button("ðŸ§ Settings", use_container_width=True):
+    if st.button("⚙️ Settings", use_container_width=True):
         st.info("Settings panel coming soon")
 
 st.markdown("""
