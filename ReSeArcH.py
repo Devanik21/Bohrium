@@ -767,7 +767,7 @@ def save_state():
 # Configure Gemini API
 try:
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-    model = genai.GenerativeModel('gemini-pro')
+    model = genai.GenerativeModel('gemma-3-27b-it')
     research_assistant = ResearchAssistant(model)
 except Exception as e:
     st.error("⚠️ Please configure GEMINI_API_KEY in Streamlit secrets")
