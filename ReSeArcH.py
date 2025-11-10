@@ -1533,18 +1533,29 @@ elif st.session_state.current_tool == "📚 Library":
     with tabs[5]:  # Analytics
         st.markdown("### 📊 Library Analytics")
         
-        if len(st.session_state.library) > 0:
+        # Add check to ensure library is a list
+        if isinstance(st.session_state.library, list) and len(st.session_state.library) > 0:
             # Overall metrics
             col1, col2, col3, col4 = st.columns(4)
+            
+            # Safe length calculations
+            papers_count = len(st.session_state.library)
+            collections_count = len(st.session_state.collections) if isinstance(st.session_state.collections, list) else 0
+            notes_count = len(st.session_state.notes) if isinstance(st.session_state.notes, list) else 0
+            reading_list_count = len(st.session_state.reading_list) if isinstance(st.session_state.reading_list, list) else 0
+            
+            reading_completed = 0
+            if isinstance(st.session_state.reading_list, list):
+                 reading_completed = sum(1 for item in st.session_state.reading_list if item.get('status') == 'Read')
+
             with col1:
-                st.metric("Total Papers", len(st.session_state.library))
+                st.metric("Total Papers", papers_count)
             with col2:
-                st.metric("Collections", len(st.session_state.collections))
+                st.metric("Collections", collections_count)
             with col3:
-                st.metric("Notes", len(st.session_state.notes))
+                st.metric("Notes", notes_count)
             with col4:
-                reading_completed = sum(1 for item in st.session_state.reading_list if item.get('status') == 'Read')
-                st.metric("Papers Read", f"{reading_completed}/{len(st.session_state.reading_list)}")
+                st.metric("Papers Read", f"{reading_completed}/{reading_list_count}")
             
             # Keywords analysis
             all_keywords = []
@@ -1626,7 +1637,7 @@ elif st.session_state.current_tool == "🔬 Research Projects":
     st.markdown("Plan, track, and manage your research projects")
     
     # Create new project
-    with st.expander("➕ Create New Project", expanded=len(st.session_state.projects) == 0):
+    with st.expander("➕ Create New Project", expanded=(not isinstance(st.session_state.projects, list) or len(st.session_state.projects) == 0)):
         project_name = st.text_input("Project Name")
         project_desc = st.text_area("Description")
         
