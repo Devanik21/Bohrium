@@ -691,20 +691,21 @@ if 'state_loaded' not in st.session_state:
 
     saved_data = user_data_table.get(doc_id=1)
     if saved_data:
-        st.session_state.chat_history = saved_data.get('chat_history', [])
+        # Use this pattern to ensure lists
+        st.session_state.chat_history = saved_data.get('chat_history', []) if isinstance(saved_data.get('chat_history'), list) else []
         st.session_state.current_tool = saved_data.get('current_tool', 'Science Navigator')
-        st.session_state.library = saved_data.get('library', [])
-        st.session_state.search_history = saved_data.get('search_history', [])
-        st.session_state.collections = saved_data.get('collections', [])
-        st.session_state.reading_list = saved_data.get('reading_list', [])
-        st.session_state.notes = saved_data.get('notes', [])
-        st.session_state.projects = saved_data.get('projects', [])
-        st.session_state.annotations = saved_data.get('annotations', {})
-        st.session_state.research_profile = saved_data.get('research_profile', {})
-        st.session_state.collaborations = saved_data.get('collaborations', [])
-        st.session_state.experiments = saved_data.get('experiments', [])
-        st.session_state.hypotheses = saved_data.get('hypotheses', [])
-        st.session_state.data_sets = saved_data.get('data_sets', [])
+        st.session_state.library = saved_data.get('library', []) if isinstance(saved_data.get('library'), list) else []
+        st.session_state.search_history = saved_data.get('search_history', []) if isinstance(saved_data.get('search_history'), list) else []
+        st.session_state.collections = saved_data.get('collections', []) if isinstance(saved_data.get('collections'), list) else []
+        st.session_state.reading_list = saved_data.get('reading_list', []) if isinstance(saved_data.get('reading_list'), list) else []
+        st.session_state.notes = saved_data.get('notes', []) if isinstance(saved_data.get('notes'), list) else []
+        st.session_state.projects = saved_data.get('projects', []) if isinstance(saved_data.get('projects'), list) else []
+        st.session_state.annotations = saved_data.get('annotations', {}) if isinstance(saved_data.get('annotations'), dict) else {}
+        st.session_state.research_profile = saved_data.get('research_profile', {}) if isinstance(saved_data.get('research_profile'), dict) else {}
+        st.session_state.collaborations = saved_data.get('collaborations', []) if isinstance(saved_data.get('collaborations'), list) else []
+        st.session_state.experiments = saved_data.get('experiments', []) if isinstance(saved_data.get('experiments'), list) else []
+        st.session_state.hypotheses = saved_data.get('hypotheses', []) if isinstance(saved_data.get('hypotheses'), list) else []
+        st.session_state.data_sets = saved_data.get('data_sets', []) if isinstance(saved_data.get('data_sets'), list) else []
         st.toast("Loaded saved session data.", icon="💾")
     else:
         st.session_state.chat_history = []
