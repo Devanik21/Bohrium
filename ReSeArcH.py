@@ -1675,7 +1675,7 @@ elif st.session_state.current_tool == "🔬 Research Projects":
                 st.rerun()
     
     # Display existing projects
-    if len(st.session_state.projects) > 0:
+        if isinstance(st.session_state.projects, list) and len(st.session_state.projects) > 0:
         st.markdown("---")
         st.markdown("### 📋 Active Projects")
         
