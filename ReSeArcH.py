@@ -830,10 +830,25 @@ with st.sidebar:
     st.markdown("---")
     
     # Quick Stats
+    # Quick Stats
     st.markdown("### 📊 Quick Stats")
-    st.metric("Papers Saved", len(st.session_state.library))
-    st.metric("Active Projects", len(st.session_state.projects))
-    st.metric("Notes", len(st.session_state.notes))
+    
+    # Add checks to prevent crash if state is not a list
+    papers_saved = 0
+    if isinstance(st.session_state.library, list):
+        papers_saved = len(st.session_state.library)
+    
+    active_projects = 0
+    if isinstance(st.session_state.projects, list):
+        active_projects = len(st.session_state.projects)
+    
+    notes_count = 0
+    if isinstance(st.session_state.notes, list):
+        notes_count = len(st.session_state.notes)
+        
+    st.metric("Papers Saved", papers_saved)
+    st.metric("Active Projects", active_projects)
+    st.metric("Notes", notes_count)
     
     st.markdown("---")
     
