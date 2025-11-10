@@ -3258,11 +3258,11 @@ elif st.session_state.current_tool == "🌐 Explore":
             with st.spinner("🛰️ Scanning the scientific cosmos for trending research..."):
                 try:
                     prompt = """Generate a list of 5 plausible, recent, and trending scientific papers. For each paper, provide:
-- Title
-- Authors (e.g., 'Chen et al.')
-- Journal (e.g., 'Nature AI')
-- A one-sentence summary of the key finding.
-- A 'Trend Score' from 80 to 100.
+- **Title:** [The paper's title]
+- **Authors:** [e.g., 'Wang et al.']
+- **Journal:** *[e.g., 'Science Robotics']*
+- **Summary:** [A detailed one or two-sentence summary of the key finding and its importance.]
+- **Trend Score:** [A score from 80 to 100]
 
 Format each paper clearly, separated by '---'. Example:
 **Title:** Real-time Quantum Error Correction with Machine Learning
@@ -3270,6 +3270,12 @@ Format each paper clearly, separated by '---'. Example:
 **Journal:** Physical Review Letters
 **Summary:** Demonstrates a novel AI-driven approach that significantly reduces qubit decoherence in superconducting quantum computers.
 **Trend Score:** 98
+
+**Title:** A self-assembling RNA-based microrobot for targeted drug delivery
+**Authors:** Wang et al.
+**Journal:** *Science Robotics*
+**Summary:** Researchers engineered a self-assembling RNA microrobot capable of navigating through complex biological environments and delivering therapeutic payloads directly to cancer cells, demonstrating a promising new avenue for precision medicine.
+**Trend Score:** 92
 ---
 """
                     response = model.generate_content(prompt)
