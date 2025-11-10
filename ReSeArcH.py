@@ -3201,44 +3201,44 @@ else:
     st.info(f"The {st.session_state.current_tool} feature is under development. More functionality coming soon!")
     
     # Show some generic content based on tool
-    if "Explore" in st.session_state.current_tool:
-        st.markdown("### ðŸŒ Explore Scientific Discoveries")
+    if "Explore" in st.session_state.current_tool: # 🌐
+        st.markdown("### 🌐 Explore Scientific Discoveries")
         st.markdown("- Browse trending papers")
         st.markdown("- Discover research topics")
         st.markdown("- Follow research areas")
     
-    elif "Subscription" in st.session_state.current_tool:
-        st.markdown("### ðŸ‹ Manage Your Subscriptions")
+    elif "Subscription" in st.session_state.current_tool: # 📋
+        st.markdown("### 📋 Manage Your Subscriptions")
         st.markdown("- Subscribe to journals")
         st.markdown("- Get alerts for new papers")
         st.markdown("- Follow researchers")
     
-    elif "Scholars" in st.session_state.current_tool:
-        st.markdown("### ðŸ'¨â€ðŸŽ Scholar Profiles")
+    elif "Scholars" in st.session_state.current_tool: # 👨‍🎓
+        st.markdown("### 👨‍🎓 Scholar Profiles")
         st.markdown("- View researcher profiles")
         st.markdown("- Track publications")
         st.markdown("- Analyze research impact")
     
-    elif "Knowledge Base" in st.session_state.current_tool:
-        st.markdown("### ðŸ– Scientific Knowledge Base")
+    elif "Knowledge Base" in st.session_state.current_tool: # 📖
+        st.markdown("### 📖 Scientific Knowledge Base")
         st.markdown("- Access curated knowledge")
         st.markdown("- Learn scientific concepts")
         st.markdown("- Explore methodologies")
     
-    elif "Practice" in st.session_state.current_tool:
-        st.markdown("### ðŸŽ¯ Research Practice Tools")
+    elif "Practice" in st.session_state.current_tool: # 🎯
+        st.markdown("### 🎯 Research Practice Tools")
         st.markdown("- Practice problem solving")
         st.markdown("- Test your knowledge")
         st.markdown("- Improve research skills")
     
-    elif "Uni-Lab" in st.session_state.current_tool:
-        st.markdown("### ðŸ› ï¸ Universal Laboratory")
+    elif "Uni-Lab" in st.session_state.current_tool: # 🛠️
+        st.markdown("### 🛠️ Universal Laboratory")
         st.markdown("- Virtual experiments")
         st.markdown("- Simulation tools")
         st.markdown("- Lab protocols")
     
-    elif "Computation" in st.session_state.current_tool:
-        st.markdown("### ðŸ'¾ Computational Tools")
+    elif "Computation" in st.session_state.current_tool: # 💾
+        st.markdown("### 💾 Computational Tools")
         st.markdown("- Data analysis")
         st.markdown("- Statistical computing")
         st.markdown("- Machine learning models")
