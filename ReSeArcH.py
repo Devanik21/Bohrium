@@ -835,8 +835,8 @@ with st.sidebar:
     st.markdown("---")
     
     # Login button
-    if st.button("🔐 Log In", use_container_width=True):
-        st.info("Login functionality would be implemented here")
+    if st.button("🔐 Log In", use_container_width=True, key="login_button"):
+        st.info("Login functionality would be implemented here.")
 
 # Main content area
 st.markdown('<div class="nobel-banner">🏆 Nobel 2025 Hub | Connect with the Great Minds and Explore Nobel Discoveries</div>', unsafe_allow_html=True)
