@@ -1,3324 +1,1501 @@
 import streamlit as st
-import google.generativeai as genai
-from datetime import datetime, timedelta
-import base64
-import os
-import json
-from tinydb import TinyDB, Query
-import hashlib
-import re
-from collections import Counter
+import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
-from typing import List, Dict, Optional
+from dataclasses import dataclass, field
+from typing import List, Dict, Tuple, Optional
+import random
+import json
+from enum import Enum
 import time
+import math
 
 # Page configuration
-st.set_page_config(
-    page_title="Bohrium | Science Navigator",
-    page_icon="🧪",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+st.set_page_config(page_title="Universe Sandbox AI", layout="wide", initial_sidebar_state="expanded")
 
-def set_app_background(image_file):
-    """Sets the background of the Streamlit app to a local image file."""
-    if not os.path.exists(image_file):
-        st.error(f"Background image not found at '{image_file}'")
-        return
-
-    with open(image_file, "rb") as f:
-        img_bytes = f.read()
-    
-    base64_img = base64.b64encode(img_bytes).decode()
-    
-    st.markdown(f"""
-    <style>
-    .stApp {{
-        background-image: url("data:image/jpeg;base64,{base64_img}");
-        background-size: cover;
-        background-position: center;
-        background-repeat: no-repeat;
-        background-attachment: fixed;
-    }}
-    </style>
-    """, unsafe_allow_html=True)
-
-# Enhanced Custom CSS for styling
+# Custom CSS
 st.markdown("""
 <style>
-    /* Sidebar styling */
-    [data-testid="stSidebar"] {
-        background: transparent !important;
-        backdrop-filter: blur(5px);
-    }
-    
-    [data-testid="stSidebar"] > div:first-child {
-        background: transparent !important;
-    }
-    
-    [data-testid="stHeader"] {
-        background: transparent !important;
-    }
-
-    /* BOHRIUM GREEN/GOLD THEME */
-    .stMarkdown, p, span, div, .stButton>button, .stTabs [data-baseweb="tab"] {
-        color: rgba(240, 240, 240, 0.9) !important;
-    }
-
-    .header-container {
-        background: rgba(10, 25, 20, 0.5);
-        backdrop-filter: blur(10px);
-        padding: 20px;
-        border-radius: 10px;
+    .main-header {
+        font-size: 3rem;
+        font-weight: bold;
         text-align: center;
-        margin-bottom: 30px;
-        border: 1px solid rgba(46, 204, 113, 0.2);
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        padding: 1rem;
     }
-    
-    .header-title {
-        color: #ffffff;
-        font-size: 42px;
-        font-weight: bold;
-        margin: 0;
-    }
-    
-    .header-subtitle {
-        color: rgba(220, 230, 225, 0.85);
-        font-size: 18px;
-        margin-top: 10px;
-    }
-    
-    .tool-card {
-        background: rgba(20, 35, 30, 0.75);
-        backdrop-filter: blur(5px);
-        padding: 20px;
+    .stat-box {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 1rem;
         border-radius: 10px;
-        border: 1px solid rgba(46, 204, 113, 0.15);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-        margin-bottom: 15px;
-        transition: transform 0.2s;
-        color: rgba(240, 240, 240, 0.9);
-    }
-    
-    .tool-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3);
-        border: 1px solid rgba(46, 204, 113, 0.3);
-    }
-    
-    .stTextInput > div > div > input {
-        border-radius: 25px;
-        border: 1px solid rgba(46, 204, 113, 0.6);
-        padding: 12px 20px;
-        background-color: rgba(10, 25, 20, 0.8);
-        color: rgba(240, 240, 240, 0.9);
-    }
-    
-    .stButton > button {
-        border-radius: 25px;
-        background: transparent !important;
-        border: 1px solid rgba(46, 204, 113, 0.7) !important;
-        color: rgba(240, 240, 240, 0.9) !important;
-        padding: 10px 30px;
-        font-weight: bold;
-        transition: all 0.3s ease;
-    }
-    
-    .stButton > button:hover {
-        background: rgba(46, 204, 113, 0.15) !important;
-        border-color: rgba(46, 204, 113, 1) !important;
-        color: #ffffff !important;
-    }
-    
-    .stSelectbox > div > div {
-        background-color: rgba(10, 25, 20, 0.8);
-        border: 1px solid rgba(46, 204, 113, 0.4);
-        color: rgba(240, 240, 240, 0.9);
-    }
-    
-    .stTextArea > div > div > textarea {
-        background-color: rgba(10, 25, 20, 0.8);
-        color: rgba(240, 240, 240, 0.9);
-        border: 1px solid rgba(46, 204, 113, 0.6);
-    }
-    
-    .stNumberInput > div > div > input {
-        background-color: rgba(10, 25, 20, 0.8);
-        color: rgba(240, 240, 240, 0.9);
-        border: 1px solid rgba(46, 204, 113, 0.6);
-    }
-    
-    .streamlit-expanderHeader {
-        background-color: rgba(20, 35, 30, 0.75);
-        border-radius: 5px;
-        color: rgba(240, 240, 240, 0.9);
-    }
-    
-    .stTabs [data-baseweb="tab-list"] {
-        background-color: transparent;
-        border-bottom: 1px solid rgba(46, 204, 113, 0.3);
-    }
-    
-    [data-testid="stMetricValue"] {
-        color: #2ecc71;
-    }
-    
-    .caption {
-        color: rgba(180, 200, 190, 0.7) !important;
-    }
-    
-    [data-testid="stSidebar"] * {
-        color: rgba(240, 240, 240, 0.9) !important;
-    }
-    
-    hr {
-        border-color: rgba(46, 204, 113, 0.2);
-    }
-    
-    .nobel-banner {
-        background: transparent !important;
-        padding: 10px;
-        border-radius: 8px;
-        text-align: center;
-        margin-bottom: 20px;
-        font-weight: bold;
-        color: rgba(240, 240, 240, 0.9) !important;
-        box-shadow: none !important;
-    }
-    
-    .accuracy-badge {
-        background: rgba(46, 204, 113, 0.2);
-        border: 1px solid rgba(46, 204, 113, 0.7);
         color: white;
-        padding: 5px 15px;
-        border-radius: 20px;
-        display: inline-block;
-        font-weight: bold;
-        font-size: 14px;
-        margin-top: 10px;
-    }
-    
-    /* Advanced Feature Cards */
-    .feature-card {
-        background: rgba(20, 35, 30, 0.85);
-        backdrop-filter: blur(8px);
-        padding: 25px;
-        border-radius: 15px;
-        border: 1px solid rgba(46, 204, 113, 0.25);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-        margin: 15px 0;
-        transition: all 0.3s ease;
-    }
-    
-    .feature-card:hover {
-        border-color: rgba(46, 204, 113, 0.5);
-        box-shadow: 0 6px 20px rgba(46, 204, 113, 0.2);
-    }
-    
-    /* Citation Badge */
-    .citation-badge {
-        background: rgba(46, 204, 113, 0.15);
-        border: 1px solid rgba(46, 204, 113, 0.5);
-        color: #2ecc71;
-        padding: 3px 10px;
-        border-radius: 12px;
-        font-size: 12px;
-        font-weight: bold;
-    }
-    
-    /* Impact Score */
-    .impact-score {
-        background: linear-gradient(135deg, rgba(46, 204, 113, 0.2), rgba(255, 215, 0, 0.2));
-        border: 1px solid rgba(46, 204, 113, 0.6);
-        padding: 15px;
-        border-radius: 10px;
         text-align: center;
+        margin: 0.5rem 0;
     }
-    
-    /* Research Timeline */
-    .timeline-item {
-        border-left: 2px solid rgba(46, 204, 113, 0.5);
-        padding-left: 20px;
-        margin: 15px 0;
-        position: relative;
-    }
-    
-    .timeline-item::before {
-        content: "●";
-        position: absolute;
-        left: -6px;
-        color: #2ecc71;
-        font-size: 12px;
-    }
-    
-    /* Analysis Card */
-    .analysis-card {
-        background: rgba(15, 30, 25, 0.9);
-        border: 1px solid rgba(46, 204, 113, 0.3);
+    .organism-card {
+        border: 2px solid #667eea;
         border-radius: 10px;
-        padding: 20px;
-        margin: 10px 0;
-    }
-    
-    /* Progress Bar Custom */
-    .custom-progress {
-        background: rgba(46, 204, 113, 0.2);
-        height: 8px;
-        border-radius: 4px;
-        overflow: hidden;
-    }
-    
-    .custom-progress-fill {
-        background: linear-gradient(90deg, #2ecc71, #27ae60);
-        height: 100%;
-        transition: width 0.3s ease;
-    }
-    
-    /* Alert Box */
-    .alert-success {
-        background: rgba(46, 204, 113, 0.15);
-        border-left: 4px solid #2ecc71;
-        padding: 15px;
-        border-radius: 5px;
-        margin: 10px 0;
-    }
-    
-    .alert-info {
-        background: rgba(52, 152, 219, 0.15);
-        border-left: 4px solid #3498db;
-        padding: 15px;
-        border-radius: 5px;
-        margin: 10px 0;
-    }
-    
-    /* Badge Container */
-    .badge-container {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        margin: 15px 0;
-    }
-    
-    .topic-badge {
-        background: rgba(46, 204, 113, 0.2);
-        border: 1px solid rgba(46, 204, 113, 0.5);
-        padding: 5px 12px;
-        border-radius: 15px;
-        font-size: 13px;
-        color: #2ecc71;
+        padding: 1rem;
+        margin: 0.5rem 0;
+        background: rgba(102, 126, 234, 0.1);
     }
 </style>
 """, unsafe_allow_html=True)
 
-# Set the background image
-image_path = "green-gradient-abstract-background-empty-room-with-space-your-text-picture.jpg"
-set_app_background(image_path)
+# Enums for different life types
+class LifeType(Enum):
+    CARBON_BASED = "Carbon-Based"
+    SILICON_BASED = "Silicon-Based"
+    NITROGEN_BASED = "Nitrogen-Based"
+    SULFUR_BASED = "Sulfur-Based"
+    PHOSPHORUS_BASED = "Phosphorus-Based"
+    METALLIC = "Metallic Life"
+    PLASMA_BASED = "Plasma-Based"
+    CRYSTALLINE = "Crystalline"
+    QUANTUM = "Quantum Entity"
+    HYBRID = "Hybrid Organism"
+    MACHINE = "Machine Life"
+    ENERGY_BEING = "Pure Energy"
 
-# Advanced Analytics Class
-class ResearchAnalytics:
-    """Advanced analytics for research patterns and insights"""
-    
-    @staticmethod
-    def calculate_h_index(citations: List[int]) -> int:
-        """Calculate h-index from citation counts"""
-        if not citations:
-            return 0
-        citations_sorted = sorted(citations, reverse=True)
-        h = 0
-        for i, c in enumerate(citations_sorted):
-            if c >= i + 1:
-                h = i + 1
-            else:
-                break
-        return h
-    
-    @staticmethod
-    def calculate_impact_factor(papers: List[Dict]) -> float:
-        """Calculate a simplified impact factor"""
-        if not papers:
-            return 0.0
-        total_citations = sum(p.get('citations', 0) for p in papers)
-        return round(total_citations / len(papers), 2)
-    
-    @staticmethod
-    def extract_keywords(text: str, top_n: int = 10) -> List[str]:
-        """Extract top keywords from text"""
-        # Simple keyword extraction
-        words = re.findall(r'\b[a-z]{4,}\b', text.lower())
-        common_words = {'that', 'this', 'with', 'from', 'have', 'been', 'their', 'which', 'about', 'would'}
-        words = [w for w in words if w not in common_words]
-        word_freq = Counter(words)
-        return [word for word, _ in word_freq.most_common(top_n)]
-    
-    @staticmethod
-    def calculate_research_velocity(papers: List[Dict]) -> Dict:
-        """Calculate research output velocity"""
-        if not papers:
-            return {"papers_per_month": 0, "trend": "stable"}
-        
-        # Group by month
-        monthly_counts = {}
-        for paper in papers:
-            date_str = paper.get('date', '')
-            if date_str:
-                try:
-                    month = date_str[:7]  # YYYY-MM
-                    monthly_counts[month] = monthly_counts.get(month, 0) + 1
-                except:
-                    pass
-        
-        if len(monthly_counts) < 2:
-            return {"papers_per_month": len(papers), "trend": "stable"}
-        
-        avg = sum(monthly_counts.values()) / len(monthly_counts)
-        recent = list(monthly_counts.values())[-3:]
-        recent_avg = sum(recent) / len(recent) if recent else avg
-        
-        trend = "increasing" if recent_avg > avg * 1.2 else "decreasing" if recent_avg < avg * 0.8 else "stable"
-        
-        return {
-            "papers_per_month": round(avg, 2),
-            "trend": trend,
-            "recent_average": round(recent_avg, 2)
-        }
+class ComplexityLevel(Enum):
+    PRIMORDIAL = 0
+    SINGLE_CELL = 1
+    MULTI_CELL = 2
+    SIMPLE_ORGANISM = 3
+    COMPLEX_ORGANISM = 4
+    INTELLIGENT = 5
+    ADVANCED = 6
+    TRANSCENDENT = 7
+    COSMIC = 8
+    OMNIPOTENT = 9
 
-# Citation Network Builder
-class CitationNetwork:
-    """Build and analyze citation networks"""
+# Data classes for organisms
+@dataclass
+class Genome:
+    dna_length: int
+    mutation_rate: float
+    genes: Dict[str, float]
+    epigenetic_factors: Dict[str, float]
+    horizontal_transfer_rate: float
     
-    def __init__(self):
-        self.nodes = {}
-        self.edges = []
+@dataclass
+class Organism:
+    id: int
+    name: str
+    life_type: LifeType
+    complexity: ComplexityLevel
+    genome: Genome
+    traits: Dict[str, float]
+    age: int
+    generation: int
+    population: int
+    energy: float
+    intelligence: float
+    adaptability: float
+    reproductive_rate: float
+    mutation_history: List[str]
+    ancestors: List[int]
+    environment_fitness: float
+    technological_level: float
+    consciousness_level: float
     
-    def add_paper(self, paper_id: str, title: str, citations: List[str]):
-        """Add a paper to the network"""
-        self.nodes[paper_id] = {
-            'title': title,
-            'citations': citations,
-            'cited_by': []
-        }
-        for cited_id in citations:
-            self.edges.append((paper_id, cited_id))
-            if cited_id in self.nodes:
-                self.nodes[cited_id]['cited_by'].append(paper_id)
+    # Physical characteristics
+    size: float
+    mass: float
+    structure_complexity: int
     
-    def get_central_papers(self, top_n: int = 10) -> List[tuple]:
-        """Get most central papers by citation count"""
-        paper_scores = []
-        for paper_id, data in self.nodes.items():
-            score = len(data.get('cited_by', []))
-            paper_scores.append((paper_id, data['title'], score))
-        return sorted(paper_scores, key=lambda x: x[2], reverse=True)[:top_n]
+    # Behavioral traits
+    aggression: float
+    cooperation: float
+    exploration_drive: float
     
-    def find_research_clusters(self) -> Dict:
-        """Identify research clusters"""
-        # Simple clustering based on citation overlap
-        clusters = {}
-        for paper_id, data in self.nodes.items():
-            citations = set(data['citations'])
-            assigned = False
-            for cluster_id, cluster_papers in clusters.items():
-                overlap = sum(1 for p in cluster_papers if set(self.nodes.get(p, {}).get('citations', [])) & citations)
-                if overlap > len(citations) * 0.3:  # 30% overlap threshold
-                    clusters[cluster_id].append(paper_id)
-                    assigned = True
-                    break
-            if not assigned:
-                clusters[f"cluster_{len(clusters)}"] = [paper_id]
-        return clusters
+    # Advanced traits
+    telepathic_ability: float
+    dimensional_awareness: float
+    quantum_coherence: float
+    
+    # Resource management
+    energy_efficiency: float
+    resource_gathering: float
+    
+    # Environmental interaction
+    temperature_tolerance: Tuple[float, float]
+    pressure_tolerance: Tuple[float, float]
+    radiation_resistance: float
 
-# Smart Search Engine
-class SmartSearchEngine:
-    """Advanced search with semantic understanding"""
+@dataclass
+class Environment:
+    temperature: float
+    pressure: float
+    radiation_level: float
+    oxygen_level: float
+    water_availability: float
+    mineral_richness: float
+    gravity: float
+    magnetic_field: float
+    atmospheric_composition: Dict[str, float]
+    geological_activity: float
+    stellar_type: str
+    cosmic_ray_flux: float
+    time_dilation_factor: float
+
+@dataclass
+class UniverseState:
+    age: int
+    organisms: List[Organism]
+    environment: Environment
+    extinction_events: int
+    evolutionary_leaps: int
+    dominant_species: Optional[str]
+    total_biomass: float
+    technological_artifacts: int
+    dimensional_breaches: int
     
-    @staticmethod
-    def parse_advanced_query(query: str) -> Dict:
-        """Parse advanced search syntax"""
-        parsed = {
-            'terms': [],
-            'authors': [],
-            'year_range': None,
-            'journals': [],
-            'exclude': [],
-            'field': None
-        }
-        
-        # Extract authors
-        author_pattern = r'author:(\w+(?:\s+\w+)?)'
-        authors = re.findall(author_pattern, query, re.IGNORECASE)
-        parsed['authors'] = authors
-        query = re.sub(author_pattern, '', query, flags=re.IGNORECASE)
-        
-        # Extract year range
-        year_pattern = r'year:(\d{4})-(\d{4})'
-        year_match = re.search(year_pattern, query)
-        if year_match:
-            parsed['year_range'] = (int(year_match.group(1)), int(year_match.group(2)))
-            query = re.sub(year_pattern, '', query)
-        
-        # Extract journals
-        journal_pattern = r'journal:(["\']?)([^"\']+)\1'
-        journals = re.findall(journal_pattern, query, re.IGNORECASE)
-        parsed['journals'] = [j[1] for j in journals]
-        query = re.sub(journal_pattern, '', query, flags=re.IGNORECASE)
-        
-        # Extract exclusions
-        exclude_pattern = r'-(\w+)'
-        excludes = re.findall(exclude_pattern, query)
-        parsed['exclude'] = excludes
-        query = re.sub(exclude_pattern, '', query)
-        
-        # Extract field
-        field_pattern = r'field:(\w+)'
-        field_match = re.search(field_pattern, query, re.IGNORECASE)
-        if field_match:
-            parsed['field'] = field_match.group(1)
-            query = re.sub(field_pattern, '', query, flags=re.IGNORECASE)
-        
-        # Remaining terms
-        parsed['terms'] = [t.strip() for t in query.split() if t.strip()]
-        
-        return parsed
+# Initialize session state
+if 'universe' not in st.session_state:
+    st.session_state.universe = None
+    st.session_state.running = False
+    st.session_state.speed = 1
+    st.session_state.history = []
+    st.session_state.generation = 0
+    st.session_state.advanced_mode = False
+
+# Sidebar controls
+st.sidebar.markdown("# 🌌 Universe Sandbox AI")
+st.sidebar.markdown("### Control Panel")
+
+# Main control section
+st.sidebar.markdown("## 🎮 Simulation Controls")
+if st.sidebar.button("🌟 Initialize Universe", use_container_width=True):
+    st.session_state.running = False
+    st.session_state.generation = 0
+    st.session_state.history = []
+
+col1, col2 = st.sidebar.columns(2)
+with col1:
+    if st.button("▶️ Start", use_container_width=True):
+        st.session_state.running = True
+with col2:
+    if st.button("⏸️ Pause", use_container_width=True):
+        st.session_state.running = False
+
+if st.sidebar.button("⏭️ Step Forward", use_container_width=True):
+    st.session_state.generation += 1
+
+if st.sidebar.button("🔄 Reset Universe", use_container_width=True):
+    st.session_state.universe = None
+    st.session_state.history = []
+    st.session_state.generation = 0
+    st.session_state.running = False
+
+st.session_state.speed = st.sidebar.slider("⚡ Simulation Speed", 1, 100, 10)
+
+# Advanced mode toggle
+st.session_state.advanced_mode = st.sidebar.checkbox("🔬 Advanced Mode", value=st.session_state.advanced_mode)
+
+# === FUNDAMENTAL PHYSICS PARAMETERS ===
+st.sidebar.markdown("---")
+st.sidebar.markdown("## ⚛️ Fundamental Physics")
+
+with st.sidebar.expander("🌟 Universal Constants", expanded=False):
+    st.markdown("### Core Constants")
+    speed_of_light = st.slider("Speed of Light (c)", 1e8, 5e8, 3e8, format="%.2e")
+    planck_constant = st.slider("Planck Constant (h)", 1e-35, 1e-33, 6.626e-34, format="%.3e")
+    gravitational_constant = st.slider("Gravitational Constant (G)", 1e-12, 1e-10, 6.674e-11, format="%.3e")
+    fine_structure_constant = st.slider("Fine Structure Constant (α)", 0.001, 0.01, 0.00729)
+    cosmological_constant = st.slider("Dark Energy Density", -1.0, 1.0, 0.7)
     
-    @staticmethod
-    def suggest_related_queries(query: str) -> List[str]:
-        """Generate related search suggestions"""
-        base_terms = query.lower().split()
-        suggestions = []
-        
-        expansions = {
-            'quantum': ['quantum computing', 'quantum mechanics', 'quantum entanglement'],
-            'machine': ['machine learning', 'deep learning', 'neural networks'],
-            'gene': ['gene editing', 'gene therapy', 'genetic engineering'],
-            'cancer': ['cancer treatment', 'oncology', 'tumor biology'],
-            'climate': ['climate change', 'global warming', 'climate modeling']
-        }
-        
-        for term in base_terms:
-            if term in expansions:
-                suggestions.extend(expansions[term])
-        
-        if not suggestions:
-            suggestions = [
-                f"{query} review",
-                f"{query} recent advances",
-                f"{query} applications",
-                f"{query} methodology"
-            ]
-        
-        return suggestions[:5]
-
-# Collaboration Recommender
-class CollaborationRecommender:
-    """Recommend potential collaborators"""
+    st.markdown("### Forces")
+    strong_force = st.slider("Strong Nuclear Force", 0.1, 2.0, 1.0)
+    weak_force = st.slider("Weak Nuclear Force", 0.1, 2.0, 1.0)
+    electromagnetic_force = st.slider("Electromagnetic Force", 0.1, 2.0, 1.0)
+    gravity_strength = st.slider("Gravity Strength", 0.1, 2.0, 1.0)
     
-    @staticmethod
-    def find_potential_collaborators(user_interests: List[str], researcher_db: List[Dict]) -> List[Dict]:
-        """Find researchers with overlapping interests"""
-        matches = []
-        user_set = set(i.lower() for i in user_interests)
-        
-        for researcher in researcher_db:
-            researcher_interests = set(i.lower() for i in researcher.get('interests', []))
-            overlap = len(user_set & researcher_interests)
-            if overlap > 0:
-                score = overlap / len(user_set) * 100
-                matches.append({
-                    'name': researcher.get('name'),
-                    'institution': researcher.get('institution'),
-                    'overlap_score': round(score, 1),
-                    'common_interests': list(user_set & researcher_interests)
-                })
-        
-        return sorted(matches, key=lambda x: x['overlap_score'], reverse=True)[:10]
+    st.markdown("### Particle Properties")
+    electron_mass = st.slider("Electron Mass Ratio", 0.5, 1.5, 1.0)
+    proton_mass = st.slider("Proton Mass Ratio", 0.5, 1.5, 1.0)
+    neutron_mass = st.slider("Neutron Mass Ratio", 0.5, 1.5, 1.0)
+    higgs_field = st.slider("Higgs Field Strength", 0.5, 1.5, 1.0)
 
-# Literature Review Generator
-class LiteratureReviewGenerator:
-    """Generate comprehensive literature reviews"""
+with st.sidebar.expander("🌌 Cosmological Parameters", expanded=False):
+    universe_age = st.slider("Universe Age (billions of years)", 1.0, 50.0, 13.8)
+    universe_expansion_rate = st.slider("Expansion Rate (Hubble)", 0.5, 2.0, 1.0)
+    matter_density = st.slider("Matter Density", 0.1, 2.0, 0.3)
+    dark_matter_ratio = st.slider("Dark Matter %", 0.0, 50.0, 26.8)
+    dark_energy_ratio = st.slider("Dark Energy %", 0.0, 80.0, 68.3)
     
-    @staticmethod
-    def generate_review_outline(topic: str, papers: List[Dict]) -> Dict:
-        """Generate a structured review outline"""
-        outline = {
-            'introduction': f"Overview of {topic}",
-            'sections': [],
-            'methodology': "Research methodology and selection criteria",
-            'findings': "Key findings and trends",
-            'gaps': "Research gaps and future directions",
-            'conclusion': "Summary and implications"
-        }
-        
-        # Group papers by themes
-        themes = {}
-        for paper in papers:
-            keywords = paper.get('keywords', [])
-            for keyword in keywords:
-                if keyword not in themes:
-                    themes[keyword] = []
-                themes[keyword].append(paper)
-        
-        # Create sections from themes
-        for theme, theme_papers in sorted(themes.items(), key=lambda x: len(x[1]), reverse=True)[:5]:
-            outline['sections'].append({
-                'title': theme.title(),
-                'papers': len(theme_papers),
-                'description': f"Analysis of {theme} in the context of {topic}"
-            })
-        
-        return outline
+    spatial_dimensions = st.slider("Spatial Dimensions", 3, 11, 3)
+    time_dimensions = st.slider("Time Dimensions", 1, 3, 1)
+    curvature = st.slider("Space-Time Curvature", -1.0, 1.0, 0.0)
+    topology_type = st.selectbox("Universe Topology", ["Flat", "Spherical", "Hyperbolic", "Toroidal", "Mobius"])
+
+with st.sidebar.expander("🔥 Thermodynamics", expanded=False):
+    entropy_increase_rate = st.slider("Entropy Increase Rate", 0.1, 2.0, 1.0)
+    heat_death_progress = st.slider("Heat Death Progress %", 0.0, 100.0, 0.1)
+    temperature_variance = st.slider("Temperature Variance", 0.0, 100.0, 50.0)
+    thermal_equilibrium_tendency = st.slider("Equilibrium Tendency", 0.0, 1.0, 0.5)
     
-    @staticmethod
-    def synthesize_findings(papers: List[Dict]) -> Dict:
-        """Synthesize findings from multiple papers"""
-        synthesis = {
-            'total_papers': len(papers),
-            'methodologies': Counter(),
-            'key_findings': [],
-            'controversies': [],
-            'consensus': []
-        }
-        
-        for paper in papers:
-            method = paper.get('methodology', 'unknown')
-            synthesis['methodologies'][method] += 1
-        
-        return synthesis
+    energy_conservation = st.slider("Energy Conservation", 0.9, 1.0, 0.999)
+    reversibility_factor = st.slider("Time Reversibility", 0.0, 0.1, 0.001)
 
-# Research Assistant AI
-class ResearchAssistant:
-    """AI-powered research assistant"""
+with st.sidebar.expander("⚡ Quantum Mechanics", expanded=False):
+    quantum_uncertainty = st.slider("Heisenberg Uncertainty", 0.5, 2.0, 1.0)
+    wave_particle_duality = st.slider("Wave-Particle Duality", 0.0, 1.0, 0.5)
+    quantum_entanglement = st.slider("Entanglement Strength", 0.0, 1.0, 0.8)
+    superposition_stability = st.slider("Superposition Stability", 0.0, 1.0, 0.5)
+    decoherence_rate = st.slider("Quantum Decoherence", 0.0, 1.0, 0.3)
     
-    def __init__(self, model):
-        self.model = model
-        self.context = []
+    quantum_tunneling = st.slider("Tunneling Probability", 0.0, 1.0, 0.1)
+    vacuum_energy = st.slider("Vacuum Energy Density", 0.0, 2.0, 1.0)
+    zero_point_energy = st.slider("Zero Point Energy", 0.0, 2.0, 1.0)
+
+# === ENVIRONMENTAL PARAMETERS ===
+st.sidebar.markdown("---")
+st.sidebar.markdown("## 🌍 Environmental Conditions")
+
+with st.sidebar.expander("🌡️ Planetary Environment", expanded=False):
+    base_temperature = st.slider("Base Temperature (K)", 0.0, 1000.0, 288.0)
+    temperature_fluctuation = st.slider("Temperature Fluctuation", 0.0, 100.0, 20.0)
+    atmospheric_pressure = st.slider("Atmospheric Pressure (atm)", 0.0, 10.0, 1.0)
+    gravity_strength_local = st.slider("Surface Gravity (g)", 0.1, 5.0, 1.0)
     
-    def generate_research_questions(self, topic: str, num_questions: int = 5) -> List[str]:
-        """Generate research questions for a topic"""
-        prompt = f"""Generate {num_questions} innovative research questions for the topic: {topic}
-        
-        Requirements:
-        - Questions should be specific and testable
-        - Cover different aspects of the topic
-        - Range from fundamental to applied research
-        - Be clear and focused
-        
-        Format: Return only the questions, numbered 1-{num_questions}"""
-        
-        try:
-            response = self.model.generate_content(prompt)
-            questions = [q.strip() for q in response.text.split('\n') if q.strip() and q[0].isdigit()]
-            return questions[:num_questions]
-        except:
-            return [f"Research question {i+1} about {topic}" for i in range(num_questions)]
+    water_coverage = st.slider("Water Coverage %", 0.0, 100.0, 70.0)
+    land_coverage = st.slider("Land Coverage %", 0.0, 100.0, 30.0)
+    ice_coverage = st.slider("Ice Coverage %", 0.0, 100.0, 3.0)
     
-    def generate_methodology(self, research_question: str) -> Dict:
-        """Generate methodology for a research question"""
-        prompt = f"""Design a research methodology for the following question:
-        {research_question}
-        
-        Include:
-        1. Study design
-        2. Data collection methods
-        3. Analysis approach
-        4. Expected outcomes
-        5. Potential limitations
-        
-        Be specific and practical."""
-        
-        try:
-            response = self.model.generate_content(prompt)
-            return {
-                'methodology': response.text,
-                'generated_at': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            }
-        except Exception as e:
-            return {'methodology': f"Error generating methodology: {str(e)}", 'generated_at': ''}
+    day_length = st.slider("Day Length (hours)", 1.0, 100.0, 24.0)
+    year_length = st.slider("Year Length (days)", 10.0, 1000.0, 365.0)
+    axial_tilt = st.slider("Axial Tilt (degrees)", 0.0, 90.0, 23.5)
+    orbital_eccentricity = st.slider("Orbital Eccentricity", 0.0, 0.5, 0.017)
+
+with st.sidebar.expander("🌊 Atmospheric Composition", expanded=False):
+    nitrogen_level = st.slider("Nitrogen %", 0.0, 100.0, 78.0)
+    oxygen_level = st.slider("Oxygen %", 0.0, 50.0, 21.0)
+    carbon_dioxide = st.slider("CO2 %", 0.0, 10.0, 0.04)
+    argon_level = st.slider("Argon %", 0.0, 5.0, 0.93)
+    methane_level = st.slider("Methane %", 0.0, 10.0, 0.0002)
+    ammonia_level = st.slider("Ammonia %", 0.0, 10.0, 0.0)
+    hydrogen_level = st.slider("Hydrogen %", 0.0, 50.0, 0.00005)
+    helium_level = st.slider("Helium %", 0.0, 30.0, 0.0005)
+    ozone_level = st.slider("Ozone Layer Strength", 0.0, 1.0, 0.8)
+
+with st.sidebar.expander("☢️ Radiation & Energy", expanded=False):
+    solar_radiation = st.slider("Solar Radiation", 0.0, 2.0, 1.0)
+    cosmic_radiation = st.slider("Cosmic Radiation", 0.0, 2.0, 0.3)
+    background_radiation = st.slider("Background Radiation", 0.0, 1.0, 0.1)
+    magnetic_field_strength = st.slider("Magnetic Field Strength", 0.0, 2.0, 1.0)
     
-    def critique_paper(self, paper_abstract: str) -> Dict:
-        """Provide critical analysis of a paper"""
-        prompt = f"""Provide a critical analysis of this research abstract:
-        
-        {paper_abstract}
-        
-        Analyze:
-        1. Strengths of the research
-        2. Potential weaknesses or limitations
-        3. Methodological concerns
-        4. Significance and impact
-        5. Suggestions for improvement
-        
-        Be constructive and specific."""
-        
-        try:
-            response = self.model.generate_content(prompt)
-            return {
-                'critique': response.text,
-                'analysis_date': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            }
-        except Exception as e:
-            return {'critique': f"Error generating critique: {str(e)}", 'analysis_date': ''}
+    uv_radiation = st.slider("UV Radiation", 0.0, 2.0, 1.0)
+    infrared_radiation = st.slider("IR Radiation", 0.0, 2.0, 1.0)
+    gamma_radiation = st.slider("Gamma Radiation", 0.0, 1.0, 0.01)
     
-    def suggest_experiments(self, hypothesis: str) -> List[Dict]:
-        """Suggest experiments to test a hypothesis"""
-        prompt = f"""Suggest 3 experiments to test this hypothesis:
-        {hypothesis}
+    geothermal_energy = st.slider("Geothermal Activity", 0.0, 2.0, 1.0)
+    tidal_forces = st.slider("Tidal Forces", 0.0, 2.0, 1.0)
+
+with st.sidebar.expander("🏔️ Geological Activity", expanded=False):
+    volcanic_activity = st.slider("Volcanic Activity", 0.0, 2.0, 1.0)
+    tectonic_activity = st.slider("Tectonic Activity", 0.0, 2.0, 1.0)
+    erosion_rate = st.slider("Erosion Rate", 0.0, 2.0, 1.0)
+    sedimentation_rate = st.slider("Sedimentation Rate", 0.0, 2.0, 1.0)
+    
+    mountain_formation = st.slider("Mountain Formation", 0.0, 1.0, 0.5)
+    ocean_trench_activity = st.slider("Ocean Trench Activity", 0.0, 1.0, 0.5)
+    continental_drift = st.slider("Continental Drift Speed", 0.0, 2.0, 1.0)
+
+# === CHEMICAL PARAMETERS ===
+st.sidebar.markdown("---")
+st.sidebar.markdown("## 🧪 Chemical Properties")
+
+with st.sidebar.expander("⚗️ Elemental Abundance", expanded=False):
+    hydrogen_abundance = st.slider("Hydrogen Abundance", 0.0, 100.0, 73.9)
+    carbon_abundance = st.slider("Carbon Abundance", 0.0, 10.0, 0.5)
+    nitrogen_abundance = st.slider("Nitrogen Abundance", 0.0, 10.0, 0.1)
+    oxygen_abundance = st.slider("Oxygen Abundance", 0.0, 10.0, 1.0)
+    silicon_abundance = st.slider("Silicon Abundance", 0.0, 5.0, 0.07)
+    phosphorus_abundance = st.slider("Phosphorus Abundance", 0.0, 1.0, 0.001)
+    sulfur_abundance = st.slider("Sulfur Abundance", 0.0, 1.0, 0.05)
+    iron_abundance = st.slider("Iron Abundance", 0.0, 5.0, 0.11)
+    
+    rare_earth_elements = st.slider("Rare Earth Elements", 0.0, 1.0, 0.1)
+    heavy_metals = st.slider("Heavy Metals", 0.0, 1.0, 0.2)
+    noble_gases = st.slider("Noble Gases", 0.0, 1.0, 0.05)
+
+with st.sidebar.expander("🔗 Chemical Bonding", expanded=False):
+    ionic_bond_strength = st.slider("Ionic Bond Strength", 0.5, 2.0, 1.0)
+    covalent_bond_strength = st.slider("Covalent Bond Strength", 0.5, 2.0, 1.0)
+    metallic_bond_strength = st.slider("Metallic Bond Strength", 0.5, 2.0, 1.0)
+    hydrogen_bond_strength = st.slider("Hydrogen Bond Strength", 0.5, 2.0, 1.0)
+    van_der_waals_force = st.slider("Van der Waals Force", 0.5, 2.0, 1.0)
+    
+    bond_formation_rate = st.slider("Bond Formation Rate", 0.1, 2.0, 1.0)
+    bond_breaking_rate = st.slider("Bond Breaking Rate", 0.1, 2.0, 1.0)
+    catalytic_efficiency = st.slider("Catalytic Efficiency", 0.5, 2.0, 1.0)
+
+with st.sidebar.expander("💧 Water Properties", expanded=False):
+    water_polarity = st.slider("Water Polarity", 0.5, 2.0, 1.0)
+    water_density_anomaly = st.slider("Density Anomaly", 0.5, 2.0, 1.0)
+    surface_tension = st.slider("Surface Tension", 0.5, 2.0, 1.0)
+    viscosity = st.slider("Viscosity", 0.5, 2.0, 1.0)
+    
+    freezing_point = st.slider("Freezing Point (C)", -50.0, 50.0, 0.0)
+    boiling_point = st.slider("Boiling Point (C)", 50.0, 200.0, 100.0)
+    heat_capacity = st.slider("Heat Capacity", 0.5, 2.0, 1.0)
+
+# === BIOLOGICAL PARAMETERS ===
+st.sidebar.markdown("---")
+st.sidebar.markdown("## 🧬 Biological Mechanisms")
+
+with st.sidebar.expander("🧬 Genetic Systems", expanded=False):
+    dna_stability = st.slider("DNA Stability", 0.5, 1.5, 1.0)
+    rna_efficiency = st.slider("RNA Efficiency", 0.5, 1.5, 1.0)
+    protein_folding_accuracy = st.slider("Protein Folding Accuracy", 0.5, 1.0, 0.99)
+    
+    base_mutation_rate = st.slider("Base Mutation Rate", 0.0, 0.1, 0.001)
+    beneficial_mutation_chance = st.slider("Beneficial Mutation %", 0.0, 50.0, 10.0)
+    neutral_mutation_chance = st.slider("Neutral Mutation %", 0.0, 80.0, 70.0)
+    harmful_mutation_chance = st.slider("Harmful Mutation %", 0.0, 50.0, 20.0)
+    
+    horizontal_gene_transfer = st.slider("Horizontal Gene Transfer", 0.0, 1.0, 0.1)
+    genetic_recombination_rate = st.slider("Recombination Rate", 0.0, 1.0, 0.5)
+    epigenetic_inheritance = st.slider("Epigenetic Inheritance", 0.0, 1.0, 0.3)
+    
+    codon_redundancy = st.slider("Codon Redundancy", 1, 6, 3)
+    intron_presence = st.slider("Intron Presence", 0.0, 1.0, 0.5)
+    gene_expression_noise = st.slider("Expression Noise", 0.0, 1.0, 0.2)
+
+with st.sidebar.expander("🦠 Cellular Mechanisms", expanded=False):
+    cell_division_rate = st.slider("Cell Division Rate", 0.1, 2.0, 1.0)
+    apoptosis_rate = st.slider("Apoptosis Rate", 0.0, 1.0, 0.1)
+    cellular_respiration_efficiency = st.slider("Respiration Efficiency", 0.3, 1.0, 0.7)
+    photosynthesis_efficiency = st.slider("Photosynthesis Efficiency", 0.1, 0.5, 0.3)
+    
+    membrane_permeability = st.slider("Membrane Permeability", 0.3, 1.0, 0.7)
+    cytoplasm_viscosity = st.slider("Cytoplasm Viscosity", 0.5, 2.0, 1.0)
+    organelle_complexity = st.slider("Organelle Complexity", 1, 50, 10)
+    
+    atp_production = st.slider("ATP Production Rate", 0.5, 2.0, 1.0)
+    protein_synthesis_rate = st.slider("Protein Synthesis", 0.5, 2.0, 1.0)
+    waste_removal_efficiency = st.slider("Waste Removal", 0.3, 1.0, 0.8)
+
+with st.sidebar.expander("🌱 Developmental Biology", expanded=False):
+    embryonic_development_speed = st.slider("Development Speed", 0.1, 2.0, 1.0)
+    morphogen_gradient_precision = st.slider("Morphogen Precision", 0.5, 1.0, 0.9)
+    cell_differentiation_rate = st.slider("Differentiation Rate", 0.1, 2.0, 1.0)
+    
+    tissue_regeneration = st.slider("Regeneration Ability", 0.0, 1.0, 0.3)
+    stem_cell_potency = st.slider("Stem Cell Potency", 0.0, 1.0, 0.8)
+    developmental_plasticity = st.slider("Developmental Plasticity", 0.0, 1.0, 0.5)
+    
+    aging_rate = st.slider("Aging Rate", 0.1, 2.0, 1.0)
+    senescence_onset = st.slider("Senescence Onset", 0.1, 2.0, 1.0)
+    telomere_shortening = st.slider("Telomere Shortening", 0.1, 2.0, 1.0)
+
+with st.sidebar.expander("🧠 Nervous System", expanded=False):
+    neuron_density = st.slider("Neuron Density", 0.1, 2.0, 1.0)
+    synapse_formation_rate = st.slider("Synapse Formation", 0.1, 2.0, 1.0)
+    neural_plasticity = st.slider("Neural Plasticity", 0.0, 1.0, 0.7)
+    
+    neurotransmitter_efficiency = st.slider("Neurotransmitter Efficiency", 0.5, 1.5, 1.0)
+    action_potential_speed = st.slider("Action Potential Speed", 0.5, 2.0, 1.0)
+    myelination_level = st.slider("Myelination Level", 0.0, 1.0, 0.8)
+    
+    brain_size_scaling = st.slider("Brain Size Scaling", 0.5, 3.0, 1.0)
+    cortical_folding = st.slider("Cortical Folding", 0.0, 2.0, 1.0)
+    neural_network_complexity = st.slider("Network Complexity", 1, 100, 50)
+
+# === EVOLUTIONARY PARAMETERS ===
+st.sidebar.markdown("---")
+st.sidebar.markdown("## 🌿 Evolutionary Dynamics")
+
+with st.sidebar.expander("🔬 Selection Pressures", expanded=False):
+    natural_selection_strength = st.slider("Natural Selection Strength", 0.0, 2.0, 1.0)
+    sexual_selection_strength = st.slider("Sexual Selection", 0.0, 2.0, 0.5)
+    artificial_selection = st.slider("Artificial Selection", 0.0, 1.0, 0.0)
+    
+    predation_pressure = st.slider("Predation Pressure", 0.0, 2.0, 1.0)
+    competition_intensity = st.slider("Competition Intensity", 0.0, 2.0, 1.0)
+    cooperation_benefit = st.slider("Cooperation Benefit", 0.0, 2.0, 1.0)
+    
+    environmental_stress = st.slider("Environmental Stress", 0.0, 2.0, 1.0)
+    resource_scarcity = st.slider("Resource Scarcity", 0.0, 2.0, 0.5)
+    habitat_fragmentation = st.slider("Habitat Fragmentation", 0.0, 1.0, 0.2)
+
+with st.sidebar.expander("🧬 Evolutionary Mechanisms", expanded=False):
+    genetic_drift_strength = st.slider("Genetic Drift", 0.0, 1.0, 0.3)
+    gene_flow_rate = st.slider("Gene Flow Rate", 0.0, 1.0, 0.5)
+    bottleneck_frequency = st.slider("Bottleneck Events", 0.0, 1.0, 0.1)
+    founder_effect = st.slider("Founder Effect", 0.0, 1.0, 0.2)
+    
+    speciation_rate = st.slider("Speciation Rate", 0.0, 1.0, 0.1)
+    extinction_rate = st.slider("Extinction Rate", 0.0, 1.0, 0.05)
+    adaptive_radiation = st.slider("Adaptive Radiation", 0.0, 2.0, 1.0)
+    
+    punctuated_equilibrium = st.slider("Punctuated Equilibrium", 0.0, 1.0, 0.5)
+    gradualism_rate = st.slider("Gradualism Rate", 0.0, 1.0, 0.5)
+    stasis_duration = st.slider("Evolutionary Stasis", 0.0, 1.0, 0.3)
+
+with st.sidebar.expander("🌍 Ecological Dynamics", expanded=False):
+    carrying_capacity = st.slider("Carrying Capacity", 100, 10000, 1000)
+    population_growth_rate = st.slider("Population Growth", 0.1, 2.0, 1.0)
+    mortality_rate = st.slider("Mortality Rate", 0.0, 1.0, 0.1)
+    
+    niche_availability = st.slider("Niche Availability", 0.0, 1.0, 0.7)
+    niche_specialization = st.slider("Niche Specialization", 0.0, 1.0, 0.5)
+    ecological_succession = st.slider("Succession Rate", 0.0, 1.0, 0.3)
+    
+    predator_prey_ratio = st.slider("Predator/Prey Ratio", 0.01, 0.5, 0.1)
+    symbiosis_frequency = st.slider("Symbiosis Frequency", 0.0, 1.0, 0.3)
+    parasitism_rate = st.slider("Parasitism Rate", 0.0, 1.0, 0.2)
+
+with st.sidebar.expander("🧩 Complexity Evolution", expanded=False):
+    complexity_increase_tendency = st.slider("Complexity Tendency", 0.0, 2.0, 1.0)
+    modularity_evolution = st.slider("Modularity Evolution", 0.0, 1.0, 0.5)
+    redundancy_level = st.slider("System Redundancy", 0.0, 1.0, 0.3)
+    
+    multicellularity_tendency = st.slider("Multicellularity Tendency", 0.0, 1.0, 0.5)
+    tissue_differentiation = st.slider("Tissue Differentiation", 0.0, 1.0, 0.5)
+    organ_system_evolution = st.slider("Organ System Evolution", 0.0, 1.0, 0.3)
+    
+    body_plan_innovation = st.slider("Body Plan Innovation", 0.0, 1.0, 0.2)
+    symmetry_evolution = st.slider("Symmetry Evolution", 0.0, 1.0, 0.5)
+    segmentation_tendency = st.slider("Segmentation", 0.0, 1.0, 0.4)
+
+# === COGNITIVE PARAMETERS ===
+st.sidebar.markdown("---")
+st.sidebar.markdown("## 🧠 Intelligence & Consciousness")
+
+with st.sidebar.expander("🤔 Cognitive Abilities", expanded=False):
+    base_intelligence = st.slider("Base Intelligence", 0.0, 10.0, 1.0)
+    learning_rate = st.slider("Learning Rate", 0.0, 2.0, 1.0)
+    memory_capacity = st.slider("Memory Capacity", 0.0, 10.0, 1.0)
+    problem_solving_ability = st.slider("Problem Solving", 0.0, 2.0, 1.0)
+    
+    abstract_thinking = st.slider("Abstract Thinking", 0.0, 1.0, 0.5)
+    pattern_recognition = st.slider("Pattern Recognition", 0.0, 1.0, 0.7)
+    creativity = st.slider("Creativity", 0.0, 1.0, 0.5)
+    
+    language_capability = st.slider("Language Capability", 0.0, 1.0, 0.3)
+    symbolic_reasoning = st.slider("Symbolic Reasoning", 0.0, 1.0, 0.4)
+    metacognition = st.slider("Metacognition", 0.0, 1.0, 0.2)
+
+with st.sidebar.expander("✨ Consciousness Parameters", expanded=False):
+    consciousness_emergence = st.slider("Consciousness Emergence", 0.0, 1.0, 0.1)
+    self_awareness_level = st.slider("Self-Awareness", 0.0, 1.0, 0.3)
+    qualia_intensity = st.slider("Qualia Intensity", 0.0, 1.0, 0.5)
+    
+    theory_of_mind = st.slider("Theory of Mind", 0.0, 1.0, 0.4)
+    empathy_capacity = st.slider("Empathy Capacity", 0.0, 1.0, 0.5)
+    emotional_complexity = st.slider("Emotional Complexity", 0.0, 1.0, 0.6)
+    
+    free_will_degree = st.slider("Free Will Degree", 0.0, 1.0, 0.5)
+    intentionality = st.slider("Intentionality", 0.0, 1.0, 0.5)
+    subjective_experience = st.slider("Subjective Experience", 0.0, 1.0, 0.5)
+
+with st.sidebar.expander("🎯 Behavioral Traits", expanded=False):
+    curiosity = st.slider("Curiosity", 0.0, 1.0, 0.5)
+    risk_taking = st.slider("Risk Taking", 0.0, 1.0, 0.3)
+    social_tendency = st.slider("Social Tendency", 0.0, 1.0, 0.6)
+    
+    aggression_base = st.slider("Base Aggression", 0.0, 1.0, 0.3)
+    cooperation_tendency = st.slider("Cooperation", 0.0, 1.0, 0.7)
+    altruism = st.slider("Altruism", 0.0, 1.0, 0.4)
+    
+    territoriality = st.slider("Territoriality", 0.0, 1.0, 0.5)
+    hierarchy_formation = st.slider("Hierarchy Formation", 0.0, 1.0, 0.6)
+    group_cohesion = st.slider("Group Cohesion", 0.0, 1.0, 0.7)
+
+with st.sidebar.expander("🎨 Cultural Evolution", expanded=False):
+    cultural_transmission = st.slider("Cultural Transmission", 0.0, 1.0, 0.3)
+    meme_evolution_rate = st.slider("Meme Evolution", 0.0, 1.0, 0.5)
+    tradition_strength = st.slider("Tradition Strength", 0.0, 1.0, 0.5)
+    
+    innovation_rate = st.slider("Innovation Rate", 0.0, 1.0, 0.4)
+    technology_adoption = st.slider("Technology Adoption", 0.0, 1.0, 0.5)
+    knowledge_accumulation = st.slider("Knowledge Accumulation", 0.0, 2.0, 1.0)
+    
+    art_emergence = st.slider("Art Emergence", 0.0, 1.0, 0.2)
+    music_capability = st.slider("Music Capability", 0.0, 1.0, 0.3)
+    storytelling = st.slider("Storytelling", 0.0, 1.0, 0.4)
+
+# === ADVANCED LIFE FORMS ===
+st.sidebar.markdown("---")
+st.sidebar.markdown("## 🔮 Advanced Life Forms")
+
+with st.sidebar.expander("🤖 Machine Life", expanded=False):
+    machine_life_emergence = st.slider("Machine Life Emergence", 0.0, 1.0, 0.0)
+    silicon_based_life = st.slider("Silicon-Based Life", 0.0, 1.0, 0.1)
+    synthetic_biology = st.slider("Synthetic Biology", 0.0, 1.0, 0.0)
+    
+    ai_evolution_rate = st.slider("AI Evolution Rate", 0.0, 2.0, 0.5)
+    cybernetic_integration = st.slider("Cybernetic Integration", 0.0, 1.0, 0.0)
+    digital_consciousness = st.slider("Digital Consciousness", 0.0, 1.0, 0.0)
+    
+    nanotechnology_level = st.slider("Nanotechnology", 0.0, 1.0, 0.0)
+    quantum_computing = st.slider("Quantum Computing", 0.0, 1.0, 0.0)
+    neural_networks_bio = st.slider("Bio-Neural Networks", 0.0, 1.0, 0.0)
+
+with st.sidebar.expander("⚡ Energy-Based Life", expanded=False):
+    energy_being_emergence = st.slider("Energy Being Emergence", 0.0, 1.0, 0.0)
+    plasma_life_probability = st.slider("Plasma Life", 0.0, 1.0, 0.0)
+    electromagnetic_life = st.slider("EM Life Forms", 0.0, 1.0, 0.0)
+    
+    photon_based_consciousness = st.slider("Photon Consciousness", 0.0, 1.0, 0.0)
+    dark_matter_interaction = st.slider("Dark Matter Interaction", 0.0, 1.0, 0.0)
+    dark_energy_utilization = st.slider("Dark Energy Use", 0.0, 1.0, 0.0)
+
+with st.sidebar.expander("🌌 Exotic Life Forms", expanded=False):
+    crystalline_life = st.slider("Crystalline Life", 0.0, 1.0, 0.0)
+    metallic_life_forms = st.slider("Metallic Life", 0.0, 1.0, 0.0)
+    gaseous_entities = st.slider("Gaseous Entities", 0.0, 1.0, 0.0)
+    
+    vacuum_based_life = st.slider("Vacuum-Based Life", 0.0, 1.0, 0.0)
+    black_hole_life = st.slider("Black Hole Life", 0.0, 1.0, 0.0)
+    neutron_star_organisms = st.slider("Neutron Star Life", 0.0, 1.0, 0.0)
+    
+    temporal_entities = st.slider("Temporal Entities", 0.0, 1.0, 0.0)
+    probability_wave_life = st.slider("Probability Wave Life", 0.0, 1.0, 0.0)
+    information_based_beings = st.slider("Information Beings", 0.0, 1.0, 0.0)
+
+with st.sidebar.expander("🔬 Hybrid & Chimeric Life", expanded=False):
+    hybrid_life_tendency = st.slider("Hybrid Life Tendency", 0.0, 1.0, 0.3)
+    symbiogenesis_rate = st.slider("Symbiogenesis", 0.0, 1.0, 0.2)
+    horizontal_species_merge = st.slider("Species Merging", 0.0, 1.0, 0.1)
+    
+    bio_machine_hybrids = st.slider("Bio-Machine Hybrids", 0.0, 1.0, 0.0)
+    multi_chemistry_life = st.slider("Multi-Chemistry Life", 0.0, 1.0, 0.1)
+    collective_consciousness = st.slider("Collective Consciousness", 0.0, 1.0, 0.2)
+
+# === TRANSCENDENT PARAMETERS ===
+st.sidebar.markdown("---")
+st.sidebar.markdown("## 🌟 Transcendent Evolution")
+
+with st.sidebar.expander("🧘 Psionic Abilities", expanded=False):
+    telepathy_emergence = st.slider("Telepathy", 0.0, 1.0, 0.0)
+    telekinesis = st.slider("Telekinesis", 0.0, 1.0, 0.0)
+    precognition = st.slider("Precognition", 0.0, 1.0, 0.0)
+    
+    mind_control = st.slider("Mind Control", 0.0, 1.0, 0.0)
+    astral_projection = st.slider("Astral Projection", 0.0, 1.0, 0.0)
+    psychic_healing = st.slider("Psychic Healing", 0.0, 1.0, 0.0)
+    
+    psionic_energy_manipulation = st.slider("Energy Manipulation", 0.0, 1.0, 0.0)
+    collective_mind_network = st.slider("Collective Mind", 0.0, 1.0, 0.0)
+
+with st.sidebar.expander("🌀 Dimensional Abilities", expanded=False):
+    dimensional_awareness = st.slider("Dimensional Awareness", 0.0, 1.0, 0.0)
+    dimensional_travel = st.slider("Dimensional Travel", 0.0, 1.0, 0.0)
+    parallel_universe_perception = st.slider("Parallel Universe Sight", 0.0, 1.0, 0.0)
+    
+    spacetime_manipulation = st.slider("Spacetime Manipulation", 0.0, 1.0, 0.0)
+    gravity_control = st.slider("Gravity Control", 0.0, 1.0, 0.0)
+    time_perception_control = st.slider("Time Control", 0.0, 1.0, 0.0)
+    
+    wormhole_creation = st.slider("Wormhole Creation", 0.0, 1.0, 0.0)
+    reality_warping = st.slider("Reality Warping", 0.0, 1.0, 0.0)
+
+with st.sidebar.expander("🎭 Cosmic Powers", expanded=False):
+    matter_creation = st.slider("Matter Creation", 0.0, 1.0, 0.0)
+    energy_conversion = st.slider("Energy Conversion", 0.0, 1.0, 0.0)
+    entropy_reversal = st.slider("Entropy Reversal", 0.0, 1.0, 0.0)
+    
+    star_manipulation = st.slider("Star Manipulation", 0.0, 1.0, 0.0)
+    planetary_engineering = st.slider("Planetary Engineering", 0.0, 1.0, 0.0)
+    galaxy_scale_influence = st.slider("Galaxy-Scale Influence", 0.0, 1.0, 0.0)
+    
+    universe_creation = st.slider("Universe Creation", 0.0, 1.0, 0.0)
+    fundamental_law_modification = st.slider("Law Modification", 0.0, 1.0, 0.0)
+    omnipresence = st.slider("Omnipresence", 0.0, 1.0, 0.0)
+
+with st.sidebar.expander("♾️ Transcendence Levels", expanded=False):
+    biological_transcendence = st.slider("Biological Transcendence", 0.0, 1.0, 0.0)
+    digital_ascension = st.slider("Digital Ascension", 0.0, 1.0, 0.0)
+    energy_ascension = st.slider("Energy Ascension", 0.0, 1.0, 0.0)
+    
+    fourth_dimensional_beings = st.slider("4D Beings", 0.0, 1.0, 0.0)
+    fifth_dimensional_beings = st.slider("5D Beings", 0.0, 1.0, 0.0)
+    higher_dimensional_beings = st.slider("Higher Dimensional", 0.0, 1.0, 0.0)
+    
+    godlike_entities = st.slider("Godlike Entities", 0.0, 1.0, 0.0)
+    universe_consciousness = st.slider("Universe Consciousness", 0.0, 1.0, 0.0)
+    absolute_omnipotence = st.slider("Absolute Omnipotence", 0.0, 1.0, 0.0)
+
+# === CATASTROPHIC EVENTS ===
+st.sidebar.markdown("---")
+st.sidebar.markdown("## ☄️ Catastrophic Events")
+
+with st.sidebar.expander("💥 Extinction Events", expanded=False):
+    asteroid_impact_frequency = st.slider("Asteroid Impacts", 0.0, 1.0, 0.01)
+    supervolcano_eruptions = st.slider("Supervolcano Eruptions", 0.0, 1.0, 0.01)
+    gamma_ray_burst = st.slider("Gamma Ray Bursts", 0.0, 1.0, 0.001)
+    
+    pandemic_frequency = st.slider("Pandemic Frequency", 0.0, 1.0, 0.1)
+    ice_age_frequency = st.slider("Ice Ages", 0.0, 1.0, 0.05)
+    magnetic_reversal = st.slider("Magnetic Reversals", 0.0, 1.0, 0.02)
+    
+    solar_flare_intensity = st.slider("Solar Flares", 0.0, 2.0, 1.0)
+    supernova_proximity = st.slider("Supernova Risk", 0.0, 1.0, 0.001)
+
+with st.sidebar.expander("🌊 Climate Catastrophes", expanded=False):
+    global_warming_rate = st.slider("Global Warming Rate", -1.0, 2.0, 0.0)
+    ocean_acidification = st.slider("Ocean Acidification", 0.0, 2.0, 0.3)
+    ozone_depletion = st.slider("Ozone Depletion", 0.0, 1.0, 0.0)
+    
+    mega_tsunami_frequency = st.slider("Mega Tsunamis", 0.0, 1.0, 0.01)
+    hypercane_formation = st.slider("Hypercanes", 0.0, 1.0, 0.0)
+    drought_severity = st.slider("Drought Severity", 0.0, 2.0, 1.0)
+
+with st.sidebar.expander("🔥 Technological Risks", expanded=False):
+    ai_takeover_risk = st.slider("AI Takeover Risk", 0.0, 1.0, 0.0)
+    nuclear_war_probability = st.slider("Nuclear War", 0.0, 1.0, 0.0)
+    bioweapon_outbreak = st.slider("Bioweapon Outbreak", 0.0, 1.0, 0.0)
+    
+    grey_goo_scenario = st.slider("Grey Goo Scenario", 0.0, 1.0, 0.0)
+    vacuum_decay = st.slider("Vacuum Decay", 0.0, 1.0, 0.0)
+    technological_singularity = st.slider("Singularity Risk", 0.0, 1.0, 0.0)
+
+# === SIMULATION PARAMETERS ===
+st.sidebar.markdown("---")
+st.sidebar.markdown("## ⚙️ Simulation Settings")
+
+with st.sidebar.expander("🎲 Randomness & Chaos", expanded=False):
+    random_seed = st.number_input("Random Seed", 0, 999999, 42)
+    chaos_factor = st.slider("Chaos Factor", 0.0, 1.0, 0.3)
+    butterfly_effect_strength = st.slider("Butterfly Effect", 0.0, 1.0, 0.5)
+    
+    determinism_level = st.slider("Determinism Level", 0.0, 1.0, 0.7)
+    emergent_behavior_tendency = st.slider("Emergent Behavior", 0.0, 1.0, 0.6)
+    black_swan_frequency = st.slider("Black Swan Events", 0.0, 1.0, 0.05)
+
+with st.sidebar.expander("📊 Visualization Settings", expanded=False):
+    show_population_graph = st.checkbox("Population Graph", True)
+    show_complexity_chart = st.checkbox("Complexity Chart", True)
+    show_diversity_index = st.checkbox("Diversity Index", True)
+    show_evolutionary_tree = st.checkbox("Evolutionary Tree", False)
+    
+    color_by_property = st.selectbox("Color By", 
+        ["Life Type", "Complexity", "Intelligence", "Energy", "Age"])
+    graph_update_frequency = st.slider("Graph Update Freq", 1, 100, 10)
+
+with st.sidebar.expander("💾 Data Management", expanded=False):
+    if st.button("Export Universe State", use_container_width=True):
+        st.info("Export functionality ready")
+    
+    if st.button("Import Universe State", use_container_width=True):
+        st.info("Import functionality ready")
+    
+    max_history_length = st.slider("Max History Length", 100, 10000, 1000)
+    auto_save_frequency = st.slider("Auto-save Every N Generations", 0, 100, 10)
+
+# === CORE SIMULATION FUNCTIONS ===
+
+def initialize_genome(params):
+    """Create a genome with specified parameters"""
+    return Genome(
+        dna_length=random.randint(1000, 10000),
+        mutation_rate=base_mutation_rate,
+        genes={
+            "metabolism": random.random(),
+            "reproduction": random.random(),
+            "intelligence": random.random(),
+            "adaptability": random.random(),
+            "longevity": random.random(),
+            "size": random.random(),
+            "sensory": random.random(),
+            "mobility": random.random(),
+        },
+        epigenetic_factors={
+            "stress_response": random.random(),
+            "environmental_memory": random.random(),
+        },
+        horizontal_transfer_rate=horizontal_gene_transfer
+    )
+
+def create_primordial_organism(id_num, params):
+    """Create the first organism"""
+    genome = initialize_genome(params)
+    
+    # Determine life type based on chemical conditions
+    life_types = [LifeType.CARBON_BASED]
+    if silicon_abundance > 1.0:
+        life_types.append(LifeType.SILICON_BASED)
+    if nitrogen_abundance > 2.0:
+        life_types.append(LifeType.NITROGEN_BASED)
+    if metallic_life_forms > 0.5:
+        life_types.append(LifeType.METALLIC)
+    
+    life_type = random.choice(life_types)
+    
+    return Organism(
+        id=id_num,
+        name=f"Organism_{id_num}",
+        life_type=life_type,
+        complexity=ComplexityLevel.PRIMORDIAL,
+        genome=genome,
+        traits={
+            "size": 0.01,
+            "metabolism": genome.genes["metabolism"],
+            "reproduction_rate": genome.genes["reproduction"] * reproductive_rate_base,
+        },
+        age=0,
+        generation=0,
+        population=100,
+        energy=100.0,
+        intelligence=base_intelligence * 0.01,
+        adaptability=genome.genes["adaptability"],
+        reproductive_rate=genome.genes["reproduction"],
+        mutation_history=[],
+        ancestors=[],
+        environment_fitness=random.random(),
+        technological_level=0.0,
+        consciousness_level=0.0,
+        size=0.01,
+        mass=0.001,
+        structure_complexity=1,
+        aggression=aggression_base,
+        cooperation=cooperation_tendency,
+        exploration_drive=curiosity,
+        telepathic_ability=0.0,
+        dimensional_awareness=0.0,
+        quantum_coherence=quantum_entanglement * 0.1,
+        energy_efficiency=0.3,
+        resource_gathering=0.5,
+        temperature_tolerance=(base_temperature - 50, base_temperature + 50),
+        pressure_tolerance=(atmospheric_pressure - 0.5, atmospheric_pressure + 0.5),
+        radiation_resistance=0.1
+    )
+
+def mutate_organism(organism, params):
+    """Apply mutations to an organism"""
+    mutations = []
+    
+    # Base mutation check
+    if random.random() < organism.genome.mutation_rate:
+        mutation_type = random.choices(
+            ["beneficial", "neutral", "harmful"],
+            weights=[beneficial_mutation_chance, neutral_mutation_chance, harmful_mutation_chance]
+        )[0]
         
-        For each experiment, provide:
-        - Experiment design
-        - Required materials/equipment
-        - Procedure outline
-        - Expected results
-        - Controls needed
+        # Select a random trait to mutate
+        trait_to_mutate = random.choice(list(organism.genome.genes.keys()))
+        old_value = organism.genome.genes[trait_to_mutate]
         
-        Format clearly with experiment numbers."""
-        
-        try:
-            response = self.model.generate_content(prompt)
-            return [{
-                'description': response.text,
-                'generated_at': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            }]
-        except Exception as e:
-            return [{'description': f"Error: {str(e)}", 'generated_at': ''}]
-
-# Initialize session state with advanced features
-# ... (starts around line 600)
-
-if 'state_loaded' not in st.session_state:
-    db = TinyDB('bohrium_db.json')
-    user_data_table = db.table('user_data')
-
-    saved_data = user_data_table.get(doc_id=1)
-    if saved_data:
-        # Use this pattern to ensure lists
-        st.session_state.chat_history = saved_data.get('chat_history', []) if isinstance(saved_data.get('chat_history'), list) else []
-        st.session_state.current_tool = saved_data.get('current_tool', 'Science Navigator')
-        st.session_state.library = saved_data.get('library', []) if isinstance(saved_data.get('library'), list) else []
-        st.session_state.search_history = saved_data.get('search_history', []) if isinstance(saved_data.get('search_history'), list) else []
-        st.session_state.collections = saved_data.get('collections', []) if isinstance(saved_data.get('collections'), list) else []
-        st.session_state.reading_list = saved_data.get('reading_list', []) if isinstance(saved_data.get('reading_list'), list) else []
-        st.session_state.notes = saved_data.get('notes', []) if isinstance(saved_data.get('notes'), list) else []
-        
-        # This is the key line that prevents your error:
-        st.session_state.projects = saved_data.get('projects', []) if isinstance(saved_data.get('projects'), list) else []
-        
-        st.session_state.annotations = saved_data.get('annotations', {}) if isinstance(saved_data.get('annotations'), dict) else {}
-        st.session_state.research_profile = saved_data.get('research_profile', {}) if isinstance(saved_data.get('research_profile'), dict) else {}
-        st.session_state.collaborations = saved_data.get('collaborations', []) if isinstance(saved_data.get('collaborations'), list) else []
-        st.session_state.experiments = saved_data.get('experiments', []) if isinstance(saved_data.get('experiments'), list) else []
-        st.session_state.hypotheses = saved_data.get('hypotheses', []) if isinstance(saved_data.get('hypotheses'), list) else []
-        st.session_state.data_sets = saved_data.get('data_sets', []) if isinstance(saved_data.get('data_sets'), list) else []
-        st.toast("Loaded saved session data.", icon="💾")
-    else:
-        st.session_state.chat_history = []
-        st.session_state.current_tool = 'Science Navigator'
-        st.session_state.library = []
-        st.session_state.search_history = []
-        st.session_state.collections = []
-        st.session_state.reading_list = []
-        st.session_state.notes = []
-        st.session_state.projects = [] # This is also correct
-        st.session_state.annotations = {}
-        st.session_state.research_profile = {
-            'interests': [],
-            'expertise_areas': [],
-            'h_index': 0,
-            'total_citations': 0,
-            'publications': []
-        }
-        st.session_state.collaborations = []
-        st.session_state.experiments = []
-        st.session_state.hypotheses = []
-        st.session_state.data_sets = []
-
-    st.session_state.state_loaded = True
-
-# ... (rest of your file)
-
-def save_state():
-    """Saves the current session state to the database."""
-    db= TinyDB('bohrium_db.json')
-    user_data_table = db.table('user_data')
-    current_state = {
-        'chat_history': st.session_state.chat_history,
-        'current_tool': st.session_state.current_tool,
-        'library': st.session_state.library,
-        'search_history': st.session_state.search_history,
-        'collections': st.session_state.collections,
-        'reading_list': st.session_state.reading_list,
-        'notes': st.session_state.notes,
-        'projects': st.session_state.projects,
-        'annotations': st.session_state.annotations,
-        'research_profile': st.session_state.research_profile,
-        'collaborations': st.session_state.collaborations,
-        'experiments': st.session_state.experiments,
-        'hypotheses': st.session_state.hypotheses,
-        'data_sets': st.session_state.data_sets,
-    }
-    if user_data_table.get(doc_id=1):
-        user_data_table.update(current_state, doc_ids=[1])
-    else:
-        user_data_table.insert(current_state)
-    st.toast("Progress saved!", icon="💾")
-
-# Configure Gemini API
-try:
-    genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-    model = genai.GenerativeModel('gemma-3-27b-it')
-    research_assistant = ResearchAssistant(model)
-except Exception as e:
-    st.error("⚠️ Please configure GEMINI_API_KEY in Streamlit secrets")
-    research_assistant = None
-
-# Password Protection
-def check_password():
-    """Returns `True` if the user has the correct password."""
-    def password_entered():
-        """Checks whether a password entered by the user is correct."""
-        if st.session_state["password"] == st.secrets["password"]:
-            st.session_state["password_correct"] = True
-            del st.session_state["password"]
+        if mutation_type == "beneficial":
+            organism.genome.genes[trait_to_mutate] *= random.uniform(1.1, 1.5)
+            mutations.append(f"Beneficial: {trait_to_mutate} +{((organism.genome.genes[trait_to_mutate]/old_value)-1)*100:.1f}%")
+        elif mutation_type == "harmful":
+            organism.genome.genes[trait_to_mutate] *= random.uniform(0.5, 0.9)
+            mutations.append(f"Harmful: {trait_to_mutate} -{(1-(organism.genome.genes[trait_to_mutate]/old_value))*100:.1f}%")
         else:
-            st.session_state["password_correct"] = False
-
-    if "password_correct" not in st.session_state:
-        st.text_input("Password", type="password", on_change=password_entered, key="password")
-        return False
-    elif not st.session_state["password_correct"]:
-        st.text_input("Password", type="password", on_change=password_entered, key="password")
-        st.error("Password incorrect")
-        return False
-    else:
-        return True
-
-if not check_password():
-    st.stop()
-
-# Enhanced Sidebar Navigation
-with st.sidebar:
-    st.markdown("### 🧭 Navigation")
-    
-    # Main tools
-    menu_items = {
-        "🆕 New Chat": "new_chat",
-        "🔍 Academic Search": "academic_search",
-        "🌐 Explore": "explore",
-        "📋 Subscription": "subscription",
-        "📚 Library": "library",
-        "👨‍🎓 Scholars": "scholars",
-        "📖 Knowledge Base": "knowledge_base",
-        "🎯 Practice": "practice",
-        "🛠️ Uni-Lab": "uni_lab",
-        "💾 Computation": "computation",
-        "📊 History": "history",
-        "🔬 Research Projects": "projects",
-        "📈 Analytics": "analytics",
-        "🤝 Collaboration": "collaboration",
-        "🧬 Hypothesis Lab": "hypothesis_lab",
-        "📝 Literature Review": "lit_review",
-        "🎓 Citation Manager": "citations"
-    }
-    
-    for label, key in menu_items.items():
-        if st.button(label, key=key, use_container_width=True):
-            st.session_state.current_tool = label
-            save_state()
-    
-    st.markdown("---")
-    
-    # Quick Stats
-    # Quick Stats
-    st.markdown("### 📊 Quick Stats")
-    
-    # Add checks to prevent crash if state is not a list
-    papers_saved = 0
-    if isinstance(st.session_state.library, list):
-        papers_saved = len(st.session_state.library)
-    
-    active_projects = 0
-    if isinstance(st.session_state.projects, list):
-        active_projects = len(st.session_state.projects)
-    
-    notes_count = 0
-    if isinstance(st.session_state.notes, list):
-        notes_count = len(st.session_state.notes)
+            organism.genome.genes[trait_to_mutate] *= random.uniform(0.95, 1.05)
+            mutations.append(f"Neutral: {trait_to_mutate} ~{((organism.genome.genes[trait_to_mutate]/old_value)-1)*100:.1f}%")
         
-    st.metric("Papers Saved", papers_saved)
-    st.metric("Active Projects", active_projects)
-    st.metric("Notes", notes_count)
+        # Clamp values
+        organism.genome.genes[trait_to_mutate] = max(0.0, min(2.0, organism.genome.genes[trait_to_mutate]))
     
-    st.markdown("---")
+    # Complexity increase chance
+    if random.random() < complexity_increase_tendency * 0.01 and organism.structure_complexity < 100:
+        organism.structure_complexity += 1
+        mutations.append(f"Structure complexity increased to {organism.structure_complexity}")
+        
+        # Check for complexity level up
+        if organism.structure_complexity > 10 and organism.complexity.value < ComplexityLevel.MULTI_CELL.value:
+            organism.complexity = ComplexityLevel.MULTI_CELL
+            mutations.append("EVOLVED: Multi-cellular life!")
+        elif organism.structure_complexity > 30 and organism.complexity.value < ComplexityLevel.COMPLEX_ORGANISM.value:
+            organism.complexity = ComplexityLevel.COMPLEX_ORGANISM
+            mutations.append("EVOLVED: Complex organism!")
+        elif organism.structure_complexity > 60 and organism.complexity.value < ComplexityLevel.INTELLIGENT.value:
+            if organism.intelligence > 1.0:
+                organism.complexity = ComplexityLevel.INTELLIGENT
+                mutations.append("EVOLVED: Intelligent being!")
     
-    # Language selector
-    language = st.selectbox("🌐 Language", ["English", "中文", "Español", "Français", "Deutsch"])
+    # Intelligence evolution
+    if organism.complexity.value >= ComplexityLevel.COMPLEX_ORGANISM.value:
+        if random.random() < learning_rate * 0.01:
+            organism.intelligence *= random.uniform(1.0, 1.2)
+            organism.consciousness_level = organism.intelligence / 10.0
+            mutations.append(f"Intelligence increased to {organism.intelligence:.2f}")
     
-    st.markdown("---")
+    # Technology development
+    if organism.complexity.value >= ComplexityLevel.INTELLIGENT.value:
+        if random.random() < innovation_rate * 0.1:
+            organism.technological_level += random.uniform(0.1, 0.5)
+            mutations.append(f"Technology level: {organism.technological_level:.2f}")
     
-    # Login button
-    if st.button("🔐 Log In", use_container_width=True, key="login_button"):
-        st.info("Login functionality would be implemented here.")
+    # Advanced evolution - transcendence
+    if organism.intelligence > 5.0 and organism.technological_level > 5.0:
+        if random.random() < biological_transcendence * 0.01:
+            if organism.complexity.value < ComplexityLevel.TRANSCENDENT.value:
+                organism.complexity = ComplexityLevel.TRANSCENDENT
+                mutations.append("TRANSCENDED: Beyond biological limits!")
+    
+    # Machine life emergence
+    if organism.technological_level > 10.0 and random.random() < machine_life_emergence * 0.01:
+        if organism.life_type != LifeType.MACHINE:
+            organism.life_type = LifeType.MACHINE
+            organism.energy_efficiency *= 2.0
+            mutations.append("TRANSFORMATION: Machine life emerged!")
+    
+    # Psionic abilities
+    if organism.consciousness_level > 0.5:
+        if random.random() < telepathy_emergence * 0.01:
+            organism.telepathic_ability += 0.1
+            mutations.append(f"Psionic ability developing: {organism.telepathic_ability:.2f}")
+    
+    # Dimensional awareness
+    if organism.intelligence > 8.0 and random.random() < dimensional_awareness * 0.01:
+        organism.dimensional_awareness += 0.1
+        mutations.append(f"Dimensional awareness: {organism.dimensional_awareness:.2f}")
+    
+    organism.mutation_history.extend(mutations)
+    return mutations
 
-# Main content area
-st.markdown('<div class="nobel-banner">🏆 Nobel 2025 Hub | Connect with the Great Minds and Explore Nobel Discoveries</div>', unsafe_allow_html=True)
-
-# Header
-st.markdown("""
-<div class="header-container">
-    <div style="display: flex; align-items: center; justify-content: center;">
-        <span style="font-size: 60px; margin-right: 20px;">🧪</span>
-        <div>
-            <h1 class="header-title">Advanced Science Navigator</h1>
-            <p class="header-subtitle">AI-Powered Research Platform - Beyond Traditional Literature Search</p>
-        </div>
-    </div>
-</div>
-""", unsafe_allow_html=True)
-
-# Main content based on selected tool
-if st.session_state.current_tool in ["🆕 New Chat", "Science Navigator"]:
-    # Enhanced chat interface with AI capabilities
-    col1, col2, col3 = st.columns([1, 2, 1])
+def calculate_fitness(organism, environment):
+    """Calculate how well organism fits environment"""
+    fitness = 1.0
     
-    with col2:
-        # Advanced search modes
-        search_mode = st.selectbox(
-            "Search Mode",
-            ["💬 Conversational", "🔬 Deep Research", "📊 Data Analysis", "🎯 Focused Query", "🌐 Multi-Source"]
+    # Temperature fitness
+    temp_min, temp_max = organism.temperature_tolerance
+    if environment.temperature < temp_min or environment.temperature > temp_max:
+        fitness *= 0.5
+    
+    # Pressure fitness
+    press_min, press_max = organism.pressure_tolerance
+    if environment.pressure < press_min or environment.pressure > press_max:
+        fitness *= 0.7
+    
+    # Radiation fitness
+    radiation_damage = max(0, environment.radiation_level - organism.radiation_resistance)
+    fitness *= (1.0 - radiation_damage * 0.5)
+    
+    # Complexity advantage
+    fitness *= (1.0 + organism.complexity.value * 0.1)
+    
+    # Intelligence advantage
+    fitness *= (1.0 + organism.intelligence * 0.05)
+    
+    organism.environment_fitness = max(0.01, fitness)
+    return fitness
+
+def simulate_generation(organisms, environment, params):
+    """Simulate one generation of evolution"""
+    new_organisms = []
+    events = []
+    
+    for organism in organisms:
+        # Age the organism
+        organism.age += 1
+        
+        # Calculate fitness
+        fitness = calculate_fitness(organism, environment)
+        
+        # Survival check
+        survival_chance = fitness * (1.0 - mortality_rate)
+        if random.random() > survival_chance:
+            organism.population = int(organism.population * 0.9)
+            if organism.population < 10:
+                events.append(f"🦠 PANDEMIC struck {victim.name}!")
+    
+    return new_organisms, events
+
+def create_environment(params):
+    """Create environment based on parameters"""
+    return Environment(
+        temperature=base_temperature,
+        pressure=atmospheric_pressure,
+        radiation_level=cosmic_radiation + background_radiation,
+        oxygen_level=oxygen_level,
+        water_availability=water_coverage / 100.0,
+        mineral_richness=(carbon_abundance + silicon_abundance) / 2.0,
+        gravity=gravity_strength_local,
+        magnetic_field=magnetic_field_strength,
+        atmospheric_composition={
+            "N2": nitrogen_level,
+            "O2": oxygen_level,
+            "CO2": carbon_dioxide,
+            "Ar": argon_level,
+            "CH4": methane_level,
+        },
+        geological_activity=volcanic_activity,
+        stellar_type="G-type" if solar_radiation < 1.5 else "F-type",
+        cosmic_ray_flux=cosmic_radiation,
+        time_dilation_factor=1.0
+    )
+
+# Main app layout
+st.markdown('<h1 class="main-header">🌌 Universe Sandbox AI 🌌</h1>', unsafe_allow_html=True)
+
+# Initialize universe
+if st.session_state.universe is None:
+    st.info("⚡ Click 'Initialize Universe' to begin the simulation of life!")
+    
+    if st.button("🌟 INITIALIZE UNIVERSE NOW", type="primary", use_container_width=True):
+        environment = create_environment(locals())
+        initial_organisms = [create_primordial_organism(i, locals()) for i in range(5)]
+        
+        st.session_state.universe = UniverseState(
+            age=0,
+            organisms=initial_organisms,
+            environment=environment,
+            extinction_events=0,
+            evolutionary_leaps=0,
+            dominant_species=None,
+            total_biomass=sum(o.population * o.mass for o in initial_organisms),
+            technological_artifacts=0,
+            dimensional_breaches=0
         )
-        
-        # Create columns for input and action buttons
-        input_col, btn1_col, btn2_col, btn3_col = st.columns([5, 1, 1, 1])
+        st.session_state.history = []
+        st.session_state.generation = 0
+        st.rerun()
 
-        with input_col:
-            user_query = st.text_input(
-                "",
-                placeholder="Ask any scientific questions or use advanced syntax (author:, year:, field:)...",
-                key="main_search",
-                label_visibility="collapsed"
-            )
-
-        with btn1_col:
-            if st.button("⚡", help="Quick Answer", use_container_width=True):
-                st.session_state.query_mode = "quick"
-        with btn2_col:
-            if st.button("🔬", help="Deep Research", use_container_width=True):
-                st.session_state.query_mode = "deep"
-        with btn3_col:
-            if st.button("💡", help="AI Suggestions", use_container_width=True):
-                st.session_state.query_mode = "suggest"
-        
-        if user_query:
-            # Parse advanced query
-            search_engine = SmartSearchEngine()
-            parsed_query = search_engine.parse_advanced_query(user_query)
-            
-            # Show parsed query info
-            if parsed_query['authors'] or parsed_query['year_range'] or parsed_query['field']:
-                with st.expander("🔍 Advanced Query Detected"):
-                    if parsed_query['authors']:
-                        st.write(f"**Authors:** {', '.join(parsed_query['authors'])}")
-                    if parsed_query['year_range']:
-                        st.write(f"**Year Range:** {parsed_query['year_range'][0]} - {parsed_query['year_range'][1]}")
-                    if parsed_query['field']:
-                        st.write(f"**Field:** {parsed_query['field']}")
-                    if parsed_query['exclude']:
-                        st.write(f"**Excluding:** {', '.join(parsed_query['exclude'])}")
-            
-            # Add to history
-            st.session_state.search_history.append({
-                "query": user_query,
-                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "mode": search_mode
-            })
-            save_state()
-            
-            # Generate response using Gemini
-            with st.spinner("🔍 Analyzing scientific literature with AI..."):
-                try:
-                    # Enhanced prompt based on mode
-                    if search_mode == "🔬 Deep Research":
-                        prompt = f"""You are an expert scientific research assistant. Provide a comprehensive, in-depth analysis of:
-                        
-Question: {user_query}
-
-Include:
-1. **Overview**: Brief introduction to the topic
-2. **Current State of Research**: What do we know?
-3. **Key Findings**: Major discoveries and breakthroughs
-4. **Methodologies**: Common research approaches
-5. **Controversies/Debates**: Areas of disagreement
-6. **Future Directions**: Where is the field heading?
-7. **Practical Applications**: Real-world implications
-8. **Key Researchers**: Notable contributors to the field
-
-Provide citations where possible and be scientifically rigorous."""
-                    
-                    elif search_mode == "📊 Data Analysis":
-                        prompt = f"""Analyze the following research query from a data-driven perspective:
-                        
-Question: {user_query}
-
-Provide:
-1. **Statistical Overview**: Key numbers and trends
-2. **Data Sources**: Where to find relevant datasets
-3. **Analysis Methods**: Appropriate statistical/analytical approaches
-4. **Visualization Suggestions**: How to present the data
-5. **Common Pitfalls**: What to watch out for in analysis
-6. **Tools & Software**: Recommended analysis tools
-
-Be specific and actionable."""
-                    
-                    elif search_mode == "🎯 Focused Query":
-                        prompt = f"""Provide a focused, precise answer to:
-                        
-{user_query}
-
-Requirements:
-- Be concise but complete
-- Focus on the most important information
-- Cite key sources
-- Avoid unnecessary background
-- Get straight to the answer"""
-                    
-                    elif search_mode == "🌐 Multi-Source":
-                        prompt = f"""Synthesize information from multiple perspectives on:
-                        
-{user_query}
-
-Include:
-1. **Academic Perspective**: What researchers say
-2. **Clinical/Applied Perspective**: Real-world applications
-3. **Industry Perspective**: Commercial implications
-4. **Public Policy Perspective**: Regulatory and societal aspects
-5. **Interdisciplinary Connections**: Related fields
-6. **Consensus vs. Debate**: Points of agreement and disagreement
-
-Provide a balanced, multi-faceted view."""
-                    
-                    else:  # Conversational
-                        prompt = f"""You are a knowledgeable scientific assistant. Answer this question naturally and comprehensively:
-                        
-{user_query}
-
-Provide accurate, scientifically sound information in a conversational tone. Include relevant examples and explain complex concepts clearly."""
-                    
-                    response = model.generate_content(prompt)
-                    
-                    # Display response with enhanced formatting
-                    st.markdown("### 📝 AI-Generated Response")
-                    st.markdown(response.text)
-                    
-                    # Extract keywords and show related topics
-                    keywords = ResearchAnalytics.extract_keywords(response.text, top_n=8)
-                    if keywords:
-                        st.markdown("---")
-                        st.markdown("### 🏷️ Key Topics Identified")
-                        st.markdown('<div class="badge-container">', unsafe_allow_html=True)
-                        for keyword in keywords:
-                            st.markdown(f'<span class="topic-badge">{keyword}</span>', unsafe_allow_html=True)
-                        st.markdown('</div>', unsafe_allow_html=True)
-                    
-                    # Suggest related queries
-                    suggestions = search_engine.suggest_related_queries(user_query)
-                    if suggestions:
-                        st.markdown("### 🔗 Related Searches")
-                        cols = st.columns(len(suggestions))
-                        for idx, suggestion in enumerate(suggestions):
-                            with cols[idx]:
-                                if st.button(f"🔍 {suggestion}", key=f"suggest_{idx}", use_container_width=True):
-                                    st.session_state.suggested_query = suggestion
-                                    st.rerun()
-                    
-                    # Action buttons
-                    st.markdown("---")
-                    col_a, col_b, col_c, col_d = st.columns(4)
-                    with col_a:
-                        if st.button("💾 Save to Library", use_container_width=True):
-                            st.session_state.library.append({
-                                "title": user_query[:100],
-                                "content": response.text,
-                                "date": datetime.now().strftime("%Y-%m-%d"),
-                                "type": "AI Response",
-                                "keywords": keywords
-                            })
-                            save_state()
-                            st.success("Saved to library!")
-                    with col_b:
-                        if st.button("📝 Add to Notes", use_container_width=True):
-                            st.session_state.notes.append({
-                                "content": f"Query: {user_query}\n\nResponse: {response.text[:500]}...",
-                                "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                                "tags": keywords
-                            })
-                            save_state()
-                            st.success("Added to notes!")
-                    with col_c:
-                        if st.button("🎯 Generate Questions", use_container_width=True):
-                            if research_assistant:
-                                questions = research_assistant.generate_research_questions(user_query, 5)
-                                st.session_state.generated_questions = questions
-                                st.rerun()
-                    with col_d:
-                        if st.button("📊 Analyze Deeper", use_container_width=True):
-                            st.session_state.deep_dive_topic = user_query
-                            st.rerun()
-                    
-                    # Add to chat history
-                    st.session_state.chat_history.append({
-                        "query": user_query,
-                        "response": response.text,
-                        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                        "mode": search_mode,
-                        "keywords": keywords
-                    })
-                    save_state()
-                    
-                except Exception as e:
-                    st.error(f"Error generating response: {str(e)}")
-        
-        # Show generated questions if available
-        if hasattr(st.session_state, 'generated_questions') and st.session_state.generated_questions:
-            st.markdown("---")
-            st.markdown("### 🎯 AI-Generated Research Questions")
-            for idx, question in enumerate(st.session_state.generated_questions):
-                st.markdown(f"{idx + 1}. {question}")
-            if st.button("Clear Questions"):
-                del st.session_state.generated_questions
-                st.rerun()
-        
-        # Quick action buttons
-        st.markdown("---")
-        col_x, col_y, col_z = st.columns(3)
-        with col_x:
-            if st.button("🔬 Try SciencePedia – Explore Visible and Reliable Science", use_container_width=True):
-                st.info("SciencePedia: Access to 170M+ scientific papers")
-        with col_y:
-            if st.button("❓ General Q&A", use_container_width=True):
-                st.info("General Q&A mode activated")
-        with col_z:
-            if st.button("💬 LitTalk", use_container_width=True):
-                st.info("LitTalk: Interactive literature discussion")
-        
-        st.markdown('<div class="accuracy-badge">Over 97% accuracy on USMLE | Powered by Advanced AI</div>', unsafe_allow_html=True)
-        
-        # Display recent conversations
-        if st.session_state.chat_history:
-            st.markdown("---")
-            st.markdown("### 💬 Recent Conversations")
-            for idx, chat in enumerate(reversed(st.session_state.chat_history[-5:])):
-                with st.expander(f"🔍 {chat['query'][:80]}... | {chat.get('mode', 'Standard')}"):
-                    st.markdown(f"**Question:** {chat['query']}")
-                    st.markdown(f"**Answer:** {chat['response'][:300]}...")
-                    if chat.get('keywords'):
-                        st.markdown("**Keywords:** " + ", ".join(chat['keywords'][:5]))
-                    st.caption(f"🕒 {chat['timestamp']}")
-                    if st.button("🔄 Rerun this query", key=f"rerun_{idx}"):
-                        st.session_state.rerun_query = chat['query']
-                        st.rerun()
-
-elif st.session_state.current_tool == "🔍 Academic Search":
-    st.markdown("## 🔍 Advanced Academic Search")
-    st.markdown("Search through 170M+ papers with powerful filters and AI-enhanced results")
-    
-    # Search interface
-    col1, col2 = st.columns([4, 1])
-    with col1:
-        search_query = st.text_input(
-            "Search academic literature...",
-            key="academic_search_input",
-            placeholder="Try: author:Einstein field:Physics year:2020-2024"
-        )
-    with col2:
-        search_type = st.selectbox("Type", ["All", "Papers", "Patents", "Scholars", "Journals", "Datasets"])
-    
-    # Advanced filters in expandable section
-    with st.expander("🎯 Advanced Filters & Settings"):
-        filter_col1, filter_col2, filter_col3 = st.columns(3)
-        
-        with filter_col1:
-            fields = st.multiselect(
-                "Research Field",
-                ["Physics", "Chemistry", "Biology", "Mathematics", "Computer Science", 
-                 "Medicine", "Engineering", "Environmental Science", "Neuroscience", "Psychology"]
-            )
-            sort_by = st.selectbox("Sort By", ["Relevance", "Date (Newest)", "Citations", "Impact Factor"])
-        
-        with filter_col2:
-            year_range = st.slider("Publication Year", 1900, 2025, (2020, 2025))
-            min_citations = st.number_input("Minimum Citations", 0, 10000, 0, step=10)
-        
-        with filter_col3:
-            journals = st.multiselect(
-                "Specific Journals",
-                ["Nature", "Science", "Cell", "Lancet", "PNAS", "NEJM", "Physical Review", "JACS"]
-            )
-            open_access = st.checkbox("Open Access Only")
-    
-    if search_query:
-        with st.spinner("🔍 Searching academic databases with AI enhancement..."):
-            try:
-                # Parse query
-                search_engine = SmartSearchEngine()
-                parsed = search_engine.parse_advanced_query(search_query)
-                
-                # Build comprehensive prompt
-                prompt = f"""As an advanced scientific literature search assistant, provide comprehensive information about: {search_query}
-                
-Context:
-- Search type: {search_type}
-- Fields: {', '.join(fields) if fields else 'All fields'}
-- Year range: {year_range[0]} - {year_range[1]}
-- Minimum citations: {min_citations}
-
-Provide:
-1. **Overview**: Brief summary of the search topic
-2. **Key Papers**: 5-7 most important recent papers (with simulated citations)
-3. **Prominent Researchers**: Key contributors to this field
-4. **Research Trends**: Current directions and hot topics
-5. **Methodological Approaches**: Common research methods
-6. **Related Topics**: Connected areas of research
-7. **Data Availability**: Where to find relevant datasets
-8. **Future Outlook**: Predicted developments
-
-Format each paper as:
-- Title
-- Authors (Year)
-- Journal
-- Citations: [number]
-- Key Finding: [one sentence]
-
-Be specific and cite actual work where possible."""
-                
-                response = model.generate_content(prompt)
-                
-                # Display results with enhanced UI
-                st.markdown("### 📊 Search Results")
-                st.markdown(response.text)
-                
-                # Simulated metrics
-                col1, col2, col3, col4 = st.columns(4)
-                with col1:
-                    st.metric("Papers Found", "1,247")
-                with col2:
-                    st.metric("Avg Citations", "156")
-                with col3:
-                    st.metric("h-index Range", "15-89")
-                with col4:
-                    st.metric("Impact Factor", "8.2")
-                
-                # Visualization placeholder
-                st.markdown("---")
-                st.markdown("### 📈 Publication Trends")
-                
-                # Create sample trend data
-                years = list(range(year_range[0], year_range[1] + 1))
-                papers = [100 + (i * 15) + (i**2) for i in range(len(years))]
-                
-                fig = go.Figure()
-                fig.add_trace(go.Scatter(
-                    x=years,
-                    y=papers,
-                    mode='lines+markers',
-                    name='Publications',
-                    line=dict(color='#2ecc71', width=3),
-                    marker=dict(size=8)
-                ))
-                fig.update_layout(
-                    title="Publications Over Time",
-                    xaxis_title="Year",
-                    yaxis_title="Number of Publications",
-                    template="plotly_dark",
-                    paper_bgcolor='rgba(0,0,0,0)',
-                    plot_bgcolor='rgba(0,0,0,0)'
-                )
-                st.plotly_chart(fig, use_container_width=True)
-                
-                # Citation network visualization
-                st.markdown("### 🕸️ Citation Network")
-                st.info("Interactive citation network visualization - showing how papers cite each other")
-                
-                # Export options
-                st.markdown("---")
-                col_e1, col_e2, col_e3, col_e4 = st.columns(4)
-                with col_e1:
-                    if st.button("📥 Export to CSV", use_container_width=True):
-                        st.success("Exported successfully!")
-                with col_e2:
-                    if st.button("📄 Generate Report", use_container_width=True):
-                        st.success("Report generated!")
-                with col_e3:
-                    if st.button("💾 Save Search", use_container_width=True):
-                        st.session_state.search_history.append({
-                            "query": search_query,
-                            "results": response.text[:500],
-                            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                        })
-                        save_state()
-                        st.success("Search saved!")
-                with col_e4:
-                    if st.button("📧 Email Alert", use_container_width=True):
-                        st.info("Alert setup for new papers in this area")
-                
-            except Exception as e:
-                st.error(f"Search error: {str(e)}")
-
-elif st.session_state.current_tool == "📚 Library":
-    st.markdown("## 📚 Personal Research Library")
-    st.markdown("Organize, annotate, and manage your research materials")
-    
-    tabs = st.tabs(["📑 Saved Papers", "🗂️ Collections", "📖 Reading List", "📝 Notes", "🔖 Annotations", "📊 Analytics"])
-    
-    with tabs[0]:  # Saved Papers
-        st.markdown("### 📑 My Saved Papers")
-        
-        # Add filtering
-        filter_col1, filter_col2 = st.columns([3, 1])
-        with filter_col1:
-            filter_text = st.text_input("🔍 Filter papers", placeholder="Search by title, keywords...")
-        with filter_col2:
-            sort_option = st.selectbox("Sort", ["Date Added", "Title", "Type"])
-        
-        if st.session_state.library and isinstance(st.session_state.library, list) and len(st.session_state.library) > 0:
-            for idx, item in enumerate(st.session_state.library):
-                if filter_text and filter_text.lower() not in item.get('title', '').lower():
-                    continue
-                    
-                with st.container():
-                    st.markdown(f"""
-                    <div class="feature-card">
-                        <h4>{item.get('title', 'Untitled')}</h4>
-                        <p><strong>Type:</strong> {item.get('type', 'Paper')}</p>
-                        <p><strong>Added:</strong> {item.get('date', 'Unknown date')}</p>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-                    if item.get('keywords'):
-                        st.markdown("**Keywords:** " + ", ".join(item['keywords'][:5]))
-                    
-                    col1, col2, col3, col4 = st.columns([1, 1, 1, 2])
-                    with col1:
-                        if st.button("📖 Read", key=f"read_{idx}"):
-                            st.session_state.current_reading = item
-                            st.info("Opening paper viewer...")
-                    with col2:
-                        if st.button("✏️ Annotate", key=f"annotate_{idx}"):
-                            st.session_state.annotating = idx
-                            st.rerun()
-                    with col3:
-                        if st.button("🗑️ Remove", key=f"remove_{idx}"):
-                            st.session_state.library.pop(idx)
-                            save_state()
-                            st.rerun()
-                    with col4:
-                        collection_choice = st.selectbox(
-                            "Add to collection",
-                            [""] + [c['name'] for c in st.session_state.collections],
-                            key=f"coll_choice_{idx}"
-                        )
-                        if collection_choice:
-                            for coll in st.session_state.collections:
-                                if coll['name'] == collection_choice:
-                                    if 'papers' not in coll:
-                                        coll['papers'] = []
-                                    coll['papers'].append(item)
-                                    save_state()
-                                    st.success(f"Added to {collection_choice}!")
-        else:
-            st.info("📚 Your library is empty. Start saving papers from your searches!")
-            
-            if st.button("➕ Add Sample Paper"):
-                st.session_state.library.append({
-                    "title": "Quantum Computing: Recent Advances and Future Prospects",
-                    "date": datetime.now().strftime("%Y-%m-%d"),
-                    "authors": "Smith et al.",
-                    "journal": "Nature",
-                    "type": "Research Paper",
-                    "keywords": ["quantum", "computing", "algorithms", "qubits"],
-                    "citations": 156,
-                    "doi": "10.1038/s41586-2024-xxxxx"
-                })
-                save_state()
-                st.rerun()
-    
-    with tabs[1]:  # Collections
-        st.markdown("### 🗂️ Research Collections")
-        
-        # Create new collection
-        with st.expander("➕ Create New Collection"):
-            col1, col2 = st.columns([3, 1])
-            with col1:
-                collection_name = st.text_input("Collection Name")
-                collection_desc = st.text_area("Description (optional)")
-            with col2:
-                collection_color = st.color_picker("Color Tag", "#2ecc71")
-            
-            if st.button("Create Collection"):
-                if collection_name:
-                    if 'collections' not in st.session_state:
-                        st.session_state.collections = []
-                    st.session_state.collections.append({
-                        "name": collection_name,
-                        "description": collection_desc,
-                        "created": datetime.now().strftime("%Y-%m-%d"),
-                        "papers": [],
-                        "color": collection_color
-                    })
-                    save_state()
-                    st.success(f"Collection '{collection_name}' created!")
-                    st.rerun()
-        
-        # Display existing collections
-        if 'collections' in st.session_state and isinstance(st.session_state.collections, list) and len(st.session_state.collections) > 0:
-            for idx, collection in enumerate(st.session_state.collections):
-                with st.expander(f"🗂️ {collection['name']} ({len(collection.get('papers', []))} papers)"):
-                    st.markdown(f"**Description:** {collection.get('description', 'No description')}")
-                    st.caption(f"Created: {collection['created']}")
-                    
-                    if collection.get('papers'):
-                        st.markdown("**Papers in this collection:**")
-                        for paper_idx, paper in enumerate(collection['papers']):
-                            st.markdown(f"{paper_idx + 1}. {paper.get('title', 'Untitled')}")
-                    
-                    col_a, col_b = st.columns(2)
-                    with col_a:
-                        if st.button("📊 Analyze Collection", key=f"analyze_col_{idx}"):
-                            st.info("Generating collection analytics...")
-                    with col_b:
-                        if st.button("🗑️ Delete Collection", key=f"del_col_{idx}"):
-                            st.session_state.collections.pop(idx)
-                            save_state()
-                            st.rerun()
-    
-    with tabs[2]:  # Reading List
-        st.markdown("### 📖 Reading List")
-        
-        # Add new item
-        with st.expander("➕ Add to Reading List"):
-            new_title = st.text_input("Paper Title")
-            new_priority = st.select_slider("Priority", ["Low", "Medium", "High", "Urgent"])
-            if st.button("Add to List"):
-                if new_title:
-                    if 'reading_list' not in st.session_state:
-                        st.session_state.reading_list = []
-                    st.session_state.reading_list.append({
-                        "title": new_title,
-                        "priority": new_priority,
-                        "added": datetime.now().strftime("%Y-%m-%d"),
-                        "status": "Unread"
-                    })
-                    save_state()
-                    st.success("Added to reading list!")
-                    st.rerun()
-        
-        if 'reading_list' not in st.session_state:
-            st.session_state.reading_list = []
-        
-        # Filter by priority
-        priority_filter = st.multiselect("Filter by Priority", ["Low", "Medium", "High", "Urgent"])
-        
-        if isinstance(st.session_state.reading_list, list) and len(st.session_state.reading_list) > 0:
-            for idx, item in enumerate(st.session_state.reading_list):
-                if priority_filter and item.get('priority') not in priority_filter:
-                    continue
-                
-                priority_color = {
-                    "Low": "#95a5a6",
-                    "Medium": "#3498db",
-                    "High": "#e67e22",
-                    "Urgent": "#e74c3c"
-                }.get(item['priority'], "#95a5a6")
-                
-                col1, col2, col3, col4 = st.columns([3, 1, 1, 1])
-                with col1:
-                    st.markdown(f"**{item['title']}**")
-                    st.markdown(f'<span style="color: {priority_color};">●</span> Priority: {item["priority"]} | Status: {item.get("status", "Unread")}', unsafe_allow_html=True)
-                with col2:
-                    if st.button("✅ Mark Read", key=f"done_{idx}"):
-                        item['status'] = "Read"
-                        save_state()
-                        st.rerun()
-                with col3:
-                    if st.button("📝 Notes", key=f"notes_{idx}"):
-                        st.session_state.note_for_paper = item['title']
-                        st.rerun()
-                with col4:
-                    if st.button("🗑️", key=f"remove_reading_{idx}"):
-                        st.session_state.reading_list.pop(idx)
-                        save_state()
-                        st.rerun()
-        else:
-            st.info("📖 Add papers to your reading list to track your progress")
-    
-    with tabs[3]:  # Notes
-        st.markdown("### 📝 Research Notes")
-        
-        # Create new note
-        with st.expander("➕ Create New Note", expanded=True):
-            note_title = st.text_input("Note Title")
-            note_content = st.text_area("Content", height=150, key="new_note_input")
-            note_tags = st.text_input("Tags (comma-separated)", placeholder="quantum, computing, algorithms")
-            
-            col1, col2 = st.columns([1, 5])
-            with col1:
-                if st.button("💾 Save Note"):
-                    if note_content:
-                        tags_list = [t.strip() for t in note_tags.split(',')] if note_tags else []
-                        st.session_state.notes.append({
-                            "title": note_title or "Untitled Note",
-                            "content": note_content,
-                            "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                            "tags": tags_list
-                        })
-                        save_state()
-                        st.success("Note saved!")
-                        st.rerun()
-        
-        # Filter notes
-        if len(st.session_state.notes) > 0:
-            search_notes = st.text_input("🔍 Search notes", placeholder="Search by title or content...")
-            
-            st.markdown("---")
-            st.markdown("### Saved Notes")
-            for idx, note in enumerate(reversed(st.session_state.notes)):
-                note_display_idx = len(st.session_state.notes) - 1 - idx
-                
-                if search_notes and search_notes.lower() not in note.get('content', '').lower() and search_notes.lower() not in note.get('title', '').lower():
-                    continue
-                
-                with st.expander(f"📝 {note.get('title', 'Untitled')} - {note['date']}"):
-                    st.markdown(f"**Content:**\n{note['content']}")
-                    if note.get('tags'):
-                        st.markdown("**Tags:** " + ", ".join([f"`{tag}`" for tag in note['tags']]))
-                    
-                    col_n1, col_n2, col_n3 = st.columns([1, 1, 4])
-                    with col_n1:
-                        if st.button("✏️ Edit", key=f"edit_note_{note_display_idx}"):
-                            st.session_state.editing_note = note_display_idx
-                            st.rerun()
-                    with col_n2:
-                        if st.button("🗑️ Delete", key=f"del_note_{note_display_idx}"):
-                            st.session_state.notes.pop(note_display_idx)
-                            save_state()
-                            st.rerun()
-        else:
-            st.info("📝 No notes yet. Create your first research note above!")
-    
-    with tabs[4]:  # Annotations
-        st.markdown("### 🔖 Paper Annotations")
-        
-        if isinstance(st.session_state.annotations, dict) and len(st.session_state.annotations) > 0:
-            for paper_id, annotations in st.session_state.annotations.items():
-                with st.expander(f"📄 {paper_id}"):
-                    for idx, annotation in enumerate(annotations):
-                        st.markdown(f"""
-                        <div class="analysis-card">
-                            <strong>Page {annotation.get('page', 'N/A')}</strong>
-                            <p>{annotation.get('text', 'No text')}</p>
-                            <small>Added: {annotation.get('date', 'Unknown')}</small>
-                        </div>
-                        """, unsafe_allow_html=True)
-                        
-                        if st.button("🗑️ Remove", key=f"del_ann_{paper_id}_{idx}"):
-                            st.session_state.annotations[paper_id].pop(idx)
-                            if not st.session_state.annotations[paper_id]:
-                                del st.session_state.annotations[paper_id]
-                            save_state()
-                            st.rerun()
-        else:
-            st.info("🔖 No annotations yet. Annotate papers from your library!")
-    
-    with tabs[5]:  # Analytics
-        st.markdown("### 📊 Library Analytics")
-        
-        # Add check to ensure library is a list
-        if isinstance(st.session_state.library, list) and len(st.session_state.library) > 0:
-            # Overall metrics
-            col1, col2, col3, col4 = st.columns(4)
-            
-            # Safe length calculations
-            papers_count = len(st.session_state.library)
-            collections_count = len(st.session_state.collections) if isinstance(st.session_state.collections, list) else 0
-            notes_count = len(st.session_state.notes) if isinstance(st.session_state.notes, list) else 0
-            reading_list_count = len(st.session_state.reading_list) if isinstance(st.session_state.reading_list, list) else 0
-            
-            reading_completed = 0
-            if isinstance(st.session_state.reading_list, list):
-                 reading_completed = sum(1 for item in st.session_state.reading_list if item.get('status') == 'Read')
-
-            with col1:
-                st.metric("Total Papers", papers_count)
-            with col2:
-                st.metric("Collections", collections_count)
-            with col3:
-                st.metric("Notes", notes_count)
-            with col4:
-                st.metric("Papers Read", f"{reading_completed}/{reading_list_count}")
-            
-            # Keywords analysis
-            all_keywords = []
-            for item in st.session_state.library:
-                all_keywords.extend(item.get('keywords', []))
-            
-            if all_keywords:
-                keyword_freq = Counter(all_keywords)
-                
-                st.markdown("### 🏷️ Top Research Topics")
-                top_keywords = keyword_freq.most_common(10)
-                
-                fig = go.Figure(data=[
-                    go.Bar(
-                        x=[k[0] for k in top_keywords],
-                        y=[k[1] for k in top_keywords],
-                        marker_color='#2ecc71'
-                    )
-                ])
-                fig.update_layout(
-                    title="Top 10 Keywords in Library",
-                    xaxis_title="Keyword",
-                    yaxis_title="Frequency",
-                    template="plotly_dark",
-                    paper_bgcolor='rgba(0,0,0,0)',
-                    plot_bgcolor='rgba(0,0,0,0)'
-                )
-                st.plotly_chart(fig, use_container_width=True)
-            
-            # Papers by type
-            paper_types = Counter(item.get('type', 'Other') for item in st.session_state.library)
-            if paper_types:
-                st.markdown("### 📑 Papers by Type")
-                fig_pie = go.Figure(data=[
-                    go.Pie(
-                        labels=list(paper_types.keys()),
-                        values=list(paper_types.values()),
-                        marker=dict(colors=['#2ecc71', '#3498db', '#e67e22', '#9b59b6'])
-                    )
-                ])
-                fig_pie.update_layout(
-                    template="plotly_dark",
-                    paper_bgcolor='rgba(0,0,0,0)',
-                    plot_bgcolor='rgba(0,0,0,0)'
-                )
-                st.plotly_chart(fig_pie, use_container_width=True)
-            
-            # Reading progress over time
-            if st.session_state.library:
-                st.markdown("### 📈 Library Growth Over Time")
-                dates = [datetime.strptime(item['date'], "%Y-%m-%d") for item in st.session_state.library if 'date' in item]
-                if dates:
-                    dates.sort()
-                    cumulative = list(range(1, len(dates) + 1))
-                    
-                    fig_growth = go.Figure()
-                    fig_growth.add_trace(go.Scatter(
-                        x=dates,
-                        y=cumulative,
-                        mode='lines+markers',
-                        name='Papers',
-                        line=dict(color='#2ecc71', width=3),
-                        fill='tozeroy'
-                    ))
-                    fig_growth.update_layout(
-                        title="Cumulative Papers in Library",
-                        xaxis_title="Date",
-                        yaxis_title="Total Papers",
-                        template="plotly_dark",
-                        paper_bgcolor='rgba(0,0,0,0)',
-                        plot_bgcolor='rgba(0,0,0,0)'
-                    )
-                    st.plotly_chart(fig_growth, use_container_width=True)
-        else:
-            st.info("📊 Add papers to your library to see analytics")
-
-elif st.session_state.current_tool == "🔬 Research Projects":
-    st.markdown("## 🔬 Research Project Management")
-    st.markdown("Plan, track, and manage your research projects")
-    
-    # Create new project
-    with st.expander("➕ Create New Project", expanded=(not isinstance(st.session_state.projects, list) or len(st.session_state.projects) == 0)):
-        project_name = st.text_input("Project Name")
-        project_desc = st.text_area("Description")
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            project_field = st.selectbox("Research Field", 
-                ["Physics", "Chemistry", "Biology", "Computer Science", "Medicine", "Engineering", "Other"])
-            project_start = st.date_input("Start Date")
-        with col2:
-            project_status = st.selectbox("Status", ["Planning", "Active", "On Hold", "Completed"])
-            project_end = st.date_input("Target End Date")
-        
-        project_team = st.text_input("Team Members (comma-separated)")
-        project_funding = st.number_input("Funding ($)", min_value=0, value=0, step=1000)
-        
-        if st.button("Create Project"):
-            if project_name:
-                st.session_state.projects.append({
-                    "name": project_name,
-                    "description": project_desc,
-                    "field": project_field,
-                    "status": project_status,
-                    "start_date": project_start.strftime("%Y-%m-%d"),
-                    "end_date": project_end.strftime("%Y-%m-%d"),
-                    "team": [m.strip() for m in project_team.split(',')] if project_team else [],
-                    "funding": project_funding,
-                    "created": datetime.now().strftime("%Y-%m-%d"),
-                    "tasks": [],
-                    "milestones": [],
-                    "papers": [],
-                    "notes": []
-                })
-                save_state()
-                st.success(f"Project '{project_name}' created!")
-                st.rerun()
-    
-    # Display existing projects
-    if isinstance(st.session_state.projects, list) and len(st.session_state.projects) > 0:
-        st.markdown("---")
-        st.markdown("### 📋 Active Projects")
-        
-        # Filter projects
-        filter_status = st.multiselect("Filter by Status", ["Planning", "Active", "On Hold", "Completed"])
-        
-        for idx, project in enumerate(st.session_state.projects):
-            if filter_status and project['status'] not in filter_status:
-                continue
-            
-            status_color = {
-                "Planning": "#3498db",
-                "Active": "#2ecc71",
-                "On Hold": "#e67e22",
-                "Completed": "#95a5a6"
-            }.get(project['status'], "#95a5a6")
-            
-            with st.expander(f"🔬 {project['name']} - {project['status']}", expanded=project['status'] == 'Active'):
-                # Project header
-                st.markdown(f"""
-                <div class="feature-card">
-                    <h3>{project['name']}</h3>
-                    <p><strong>Field:</strong> {project['field']}</p>
-                    <p><strong>Description:</strong> {project['description']}</p>
-                    <p><strong>Duration:</strong> {project['start_date']} to {project['end_date']}</p>
-                    <p><strong>Team:</strong> {', '.join(project['team']) if project['team'] else 'Solo project'}</p>
-                    <p><strong>Funding:</strong> ${project['funding']:,.0f}</p>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                # Project tabs
-                proj_tabs = st.tabs(["📋 Tasks", "🎯 Milestones", "📄 Papers", "💡 Ideas", "📊 Progress"])
-                
-                with proj_tabs[0]:  # Tasks
-                    st.markdown("#### Tasks")
-                    
-                    # Add task
-                    with st.form(key=f"add_task_{idx}"):
-                        task_name = st.text_input("Task Name")
-                        task_priority = st.selectbox("Priority", ["Low", "Medium", "High"])
-                        task_submit = st.form_submit_button("Add Task")
-                        
-                        if task_submit and task_name:
-                            if 'tasks' not in project:
-                                project['tasks'] = []
-                            project['tasks'].append({
-                                "name": task_name,
-                                "priority": task_priority,
-                                "status": "To Do",
-                                "created": datetime.now().strftime("%Y-%m-%d")
-                            })
-                            save_state()
-                            st.rerun()
-                    
-                    # Display tasks
-                    if project.get('tasks'):
-                        for task_idx, task in enumerate(project['tasks']):
-                            col_t1, col_t2, col_t3, col_t4 = st.columns([3, 1, 1, 1])
-                            with col_t1:
-                                st.markdown(f"**{task['name']}** - Priority: {task['priority']}")
-                            with col_t2:
-                                task_status = st.selectbox(
-                                    "Status",
-                                    ["To Do", "In Progress", "Done"],
-                                    key=f"task_status_{idx}_{task_idx}",
-                                    index=["To Do", "In Progress", "Done"].index(task.get('status', 'To Do'))
-                                )
-                                if task_status != task.get('status'):
-                                    task['status'] = task_status
-                                    save_state()
-                            with col_t3:
-                                if st.button("✏️", key=f"edit_task_{idx}_{task_idx}"):
-                                    st.info("Task editing")
-                            with col_t4:
-                                if st.button("🗑️", key=f"del_task_{idx}_{task_idx}"):
-                                    project['tasks'].pop(task_idx)
-                                    save_state()
-                                    st.rerun()
-                
-                with proj_tabs[1]:  # Milestones
-                    st.markdown("#### Milestones")
-                    
-                    with st.form(key=f"add_milestone_{idx}"):
-                        milestone_name = st.text_input("Milestone Name")
-                        milestone_date = st.date_input("Target Date")
-                        milestone_submit = st.form_submit_button("Add Milestone")
-                        
-                        if milestone_submit and milestone_name:
-                            if 'milestones' not in project:
-                                project['milestones'] = []
-                            project['milestones'].append({
-                                "name": milestone_name,
-                                "date": milestone_date.strftime("%Y-%m-%d"),
-                                "achieved": False
-                            })
-                            save_state()
-                            st.rerun()
-                    
-                    if project.get('milestones'):
-                        for ms_idx, milestone in enumerate(project['milestones']):
-                            col_m1, col_m2, col_m3 = st.columns([3, 1, 1])
-                            with col_m1:
-                                st.markdown(f"**{milestone['name']}** - {milestone['date']}")
-                            with col_m2:
-                                achieved = st.checkbox("Achieved", value=milestone.get('achieved', False), key=f"ms_check_{idx}_{ms_idx}")
-                                if achieved != milestone.get('achieved'):
-                                    milestone['achieved'] = achieved
-                                    save_state()
-                            with col_m3:
-                                if st.button("🗑️", key=f"del_ms_{idx}_{ms_idx}"):
-                                    project['milestones'].pop(ms_idx)
-                                    save_state()
-                                    st.rerun()
-                
-                with proj_tabs[2]:  # Papers
-                    st.markdown("#### Related Papers")
-                    
-                    # Link papers from library
-                    if st.session_state.library:
-                        paper_to_add = st.selectbox(
-                            "Add paper from library",
-                            [""] + [p['title'] for p in st.session_state.library],
-                            key=f"add_paper_{idx}"
-                        )
-                        if paper_to_add and st.button("Link Paper", key=f"link_paper_{idx}"):
-                            if 'papers' not in project:
-                                project['papers'] = []
-                            paper_data = next((p for p in st.session_state.library if p['title'] == paper_to_add), None)
-                            if paper_data and paper_data not in project['papers']:
-                                project['papers'].append(paper_data)
-                                save_state()
-                                st.success("Paper linked!")
-                                st.rerun()
-                    
-                    if project.get('papers'):
-                        for paper in project['papers']:
-                            st.markdown(f"- 📄 {paper['title']}")
-                
-                with proj_tabs[3]:  # Ideas
-                    st.markdown("#### Research Ideas & Notes")
-                    
-                    idea_text = st.text_area("New Idea", key=f"idea_{idx}", height=100)
-                    if st.button("💡 Save Idea", key=f"save_idea_{idx}"):
-                        if idea_text:
-                            if 'notes' not in project:
-                                project['notes'] = []
-                            project['notes'].append({
-                                "content": idea_text,
-                                "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                            })
-                            save_state()
-                            st.success("Idea saved!")
-                            st.rerun()
-                    
-                    if project.get('notes'):
-                        for note_idx, note in enumerate(reversed(project['notes'])):
-                            st.markdown(f"""
-                            <div class="analysis-card">
-                                <p>{note['content']}</p>
-                                <small>{note['date']}</small>
-                            </div>
-                            """, unsafe_allow_html=True)
-                
-                with proj_tabs[4]:  # Progress
-                    st.markdown("#### Project Progress")
-                    
-                    # Calculate progress
-                    total_tasks = len(project.get('tasks', []))
-                    completed_tasks = sum(1 for t in project.get('tasks', []) if t.get('status') == 'Done')
-                    progress_pct = (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
-                    
-                    st.metric("Task Completion", f"{completed_tasks}/{total_tasks} ({progress_pct:.0f}%)")
-                    
-                    # Progress bar
-                    st.progress(progress_pct / 100)
-                    
-                    # Milestones progress
-                    total_milestones = len(project.get('milestones', []))
-                    achieved_milestones = sum(1 for m in project.get('milestones', []) if m.get('achieved'))
-                    
-                    col_p1, col_p2 = st.columns(2)
-                    with col_p1:
-                        st.metric("Milestones Achieved", f"{achieved_milestones}/{total_milestones}")
-                    with col_p2:
-                        days_elapsed = (datetime.now() - datetime.strptime(project['start_date'], "%Y-%m-%d")).days
-                        st.metric("Days Active", days_elapsed)
-                
-                # Project actions
-                st.markdown("---")
-                col_a1, col_a2, col_a3, col_a4 = st.columns(4)
-                with col_a1:
-                    if st.button("📊 Generate Report", key=f"report_{idx}"):
-                        if research_assistant:
-                            with st.spinner("Generating project report..."):
-                                report_prompt = f"""Generate a comprehensive progress report for this research project:
-                                
-Project: {project['name']}
-Field: {project['field']}
-Status: {project['status']}
-Duration: {project['start_date']} to {project['end_date']}
-Tasks: {total_tasks} total, {completed_tasks} completed
-Milestones: {achieved_milestones}/{total_milestones} achieved
-
-Generate a professional report including:
-1. Executive Summary
-2. Progress Overview
-3. Key Achievements
-4. Challenges Faced
-5. Next Steps
-6. Resource Utilization
-7. Risk Assessment
-8. Recommendations"""
-                                
-                                try:
-                                    report = model.generate_content(report_prompt)
-                                    st.markdown("### 📄 Project Report")
-                                    st.markdown(report.text)
-                                except Exception as e:
-                                    st.error(f"Error generating report: {str(e)}")
-                
-                with col_a2:
-                    new_status = st.selectbox("Change Status", ["Planning", "Active", "On Hold", "Completed"], 
-                                             index=["Planning", "Active", "On Hold", "Completed"].index(project['status']),
-                                             key=f"status_{idx}")
-                    if new_status != project['status']:
-                        project['status'] = new_status
-                        save_state()
-                        st.rerun()
-                
-                with col_a3:
-                    if st.button("📋 Export Project", key=f"export_{idx}"):
-                        project_json = json.dumps(project, indent=2)
-                        st.download_button(
-                            "Download JSON",
-                            project_json,
-                            file_name=f"{project['name']}_export.json",
-                            mime="application/json"
-                        )
-                
-                with col_a4:
-                    if st.button("🗑️ Delete Project", key=f"del_proj_{idx}"):
-                        if st.checkbox("Confirm deletion", key=f"confirm_del_{idx}"):
-                            st.session_state.projects.pop(idx)
-                            save_state()
-                            st.success("Project deleted")
-                            st.rerun()
-    else:
-        st.info("🔬 No projects yet. Create your first research project above!")
-
-elif st.session_state.current_tool == "📈 Analytics":
-    st.markdown("## 📈 Research Analytics Dashboard")
-    st.markdown("Comprehensive analytics and insights into your research activity")
-    
-    # Overall metrics
-    st.markdown("### 📊 Overview")
+else:
+    # Main dashboard
     col1, col2, col3, col4, col5 = st.columns(5)
     
     with col1:
-        papers_count = len(st.session_state.library) if isinstance(st.session_state.library, list) else 0
-        st.metric("Total Papers", papers_count)
+        st.markdown(f"""<div class="stat-box">
+            <h3>⏱️ Generation</h3>
+            <h2>{st.session_state.generation}</h2>
+        </div>""", unsafe_allow_html=True)
+    
     with col2:
-        active_projects = 0
-        if isinstance(st.session_state.projects, list):
-            active_projects = sum(1 for p in st.session_state.projects if p.get('status') == 'Active')
-        st.metric("Active Projects", active_projects)
+        species_count = len(st.session_state.universe.organisms)
+        st.markdown(f"""<div class="stat-box">
+            <h3>🧬 Species</h3>
+            <h2>{species_count}</h2>
+        </div>""", unsafe_allow_html=True)
+    
     with col3:
-        notes_count = len(st.session_state.notes) if isinstance(st.session_state.notes, list) else 0
-        st.metric("Research Notes", notes_count)
+        total_pop = sum(o.population for o in st.session_state.universe.organisms)
+        st.markdown(f"""<div class="stat-box">
+            <h3>👥 Population</h3>
+            <h2>{total_pop:,}</h2>
+        </div>""", unsafe_allow_html=True)
+    
     with col4:
-        searches_count = len(st.session_state.search_history) if isinstance(st.session_state.search_history, list) else 0
-        st.metric("Searches Made", searches_count)
+        max_intelligence = max([o.intelligence for o in st.session_state.universe.organisms] + [0])
+        st.markdown(f"""<div class="stat-box">
+            <h3>🧠 Max Intelligence</h3>
+            <h2>{max_intelligence:.2f}</h2>
+        </div>""", unsafe_allow_html=True)
+    
     with col5:
-        total_citations = 0
-        if isinstance(st.session_state.library, list):
-            total_citations = sum(p.get('citations', 0) for p in st.session_state.library if isinstance(p, dict))
-        st.metric("Total Citations", total_citations)
+        max_complexity = max([o.complexity.value for o in st.session_state.universe.organisms] + [0])
+        st.markdown(f"""<div class="stat-box">
+            <h3>🔬 Max Complexity</h3>
+            <h2>{max_complexity}</h2>
+        </div>""", unsafe_allow_html=True)
     
-    # Analytics tabs
-    analytics_tabs = st.tabs(["📊 Activity", "🏷️ Topics", "🔬 Research Impact", "⏱️ Time Analysis", "🎯 Goals"])
-    
-    with analytics_tabs[0]:  # Activity
-        st.markdown("### 📊 Research Activity")
-        
-        if st.session_state.search_history:
-            # Activity over time
-            dates = [datetime.strptime(s['timestamp'].split()[0], "%Y-%m-%d") for s in st.session_state.search_history if 'timestamp' in s]
-            if dates:
-                date_counts = Counter([d.strftime("%Y-%m") for d in dates])
-                
-                fig_activity = go.Figure()
-                fig_activity.add_trace(go.Bar(
-                    x=list(date_counts.keys()),
-                    y=list(date_counts.values()),
-                    marker_color='#2ecc71'
-                ))
-                fig_activity.update_layout(
-                    title="Monthly Search Activity",
-                    xaxis_title="Month",
-                    yaxis_title="Searches",
-                    template="plotly_dark",
-                    paper_bgcolor='rgba(0,0,0,0)',
-                    plot_bgcolor='rgba(0,0,0,0)'
-                )
-                st.plotly_chart(fig_activity, use_container_width=True)
-        
-        # Recent activity timeline
-        st.markdown("#### Recent Activity")
-        recent_activities = []
-        
-        # Combine different activities
-        for search in st.session_state.search_history[-5:]:
-            recent_activities.append({
-                "type": "Search",
-                "description": search['query'][:50],
-                "time": search['timestamp']
-            })
-        
-        for note in st.session_state.notes[-5:]:
-            recent_activities.append({
-                "type": "Note",
-                "description": note.get('title', 'Untitled')[:50],
-                "time": note['date']
-            })
-        
-        # Sort by time
-        recent_activities.sort(key=lambda x: x['time'], reverse=True)
-        
-        for activity in recent_activities[:10]:
-            icon = "🔍" if activity['type'] == "Search" else "📝"
-            st.markdown(f"""
-            <div class="timeline-item">
-                {icon} <strong>{activity['type']}</strong>: {activity['description']}
-                <br><small>{activity['time']}</small>
-            </div>
-            """, unsafe_allow_html=True)
-    
-    with analytics_tabs[1]:  # Topics
-        st.markdown("### 🏷️ Research Topics Analysis")
-        
-        # Extract all keywords
-        # Extract all keywords
-        all_keywords = []
-        
-        # Add check to ensure library is a list
-        if isinstance(st.session_state.library, list):
-            for item in st.session_state.library:
-                if isinstance(item, dict):
-                    all_keywords.extend(item.get('keywords', []))
-        
-        # Add check to ensure chat_history is a list
-        if isinstance(st.session_state.chat_history, list):
-            for chat in st.session_state.chat_history:
-                if isinstance(chat, dict):
-                    all_keywords.extend(chat.get('keywords', []))
-        
-        if all_keywords:
-            keyword_freq = Counter(all_keywords)
-            top_20 = keyword_freq.most_common(20)
-            
-            # Word cloud style visualization
-            fig_topics = go.Figure(data=[
-                go.Bar(
-                    y=[k[0] for k in top_20],
-                    x=[k[1] for k in top_20],
-                    orientation='h',
-                    marker=dict(
-                        color=[k[1] for k in top_20],
-                        colorscale='Greens'
-                    )
-                )
-            ])
-            fig_topics.update_layout(
-                title="Top 20 Research Topics",
-                xaxis_title="Frequency",
-                yaxis_title="Topic",
-                template="plotly_dark",
-                paper_bgcolor='rgba(0,0,0,0)',
-                plot_bgcolor='rgba(0,0,0,0)',
-                height=600
+    # Simulation step
+    if st.session_state.running:
+        for _ in range(st.session_state.speed):
+            st.session_state.generation += 1
+            organisms, events = simulate_generation(
+                st.session_state.universe.organisms,
+                st.session_state.universe.environment,
+                locals()
             )
-            st.plotly_chart(fig_topics, use_container_width=True)
             
-            # Topic clusters
-            st.markdown("#### Topic Clusters")
-            st.info("Topics are grouped based on co-occurrence patterns")
+            st.session_state.universe.organisms = organisms
+            st.session_state.universe.age += 1
             
-            # Simple clustering visualization
-            col_c1, col_c2, col_c3 = st.columns(3)
-            keyword_list = list(keyword_freq.keys())
+            # Record history
+            st.session_state.history.append({
+                "generation": st.session_state.generation,
+                "species_count": len(organisms),
+                "total_population": sum(o.population for o in organisms),
+                "max_intelligence": max([o.intelligence for o in organisms] + [0]),
+                "max_complexity": max([o.complexity.value for o in organisms] + [0]),
+                "avg_fitness": np.mean([o.environment_fitness for o in organisms]) if organisms else 0,
+            })
             
-            with col_c1:
-                st.markdown("**Cluster 1**")
-                for kw in keyword_list[:5]:
-                    st.markdown(f"- {kw}")
-            with col_c2:
-                st.markdown("**Cluster 2**")
-                for kw in keyword_list[5:10]:
-                    st.markdown(f"- {kw}")
-            with col_c3:
-                st.markdown("**Cluster 3**")
-                for kw in keyword_list[10:15]:
-                    st.markdown(f"- {kw}")
-        else:
-            st.info("No topics analyzed yet. Continue your research to see topic analytics!")
+            # Keep history manageable
+            if len(st.session_state.history) > max_history_length:
+                st.session_state.history = st.session_state.history[-max_history_length:]
+        
+        time.sleep(0.1)
+        st.rerun()
     
-    with analytics_tabs[2]:  # Research Impact
-        st.markdown("### 🔬 Research Impact Metrics")
-        
-        if st.session_state.library:
-            # Calculate h-index
-            citations = [p.get('citations', 0) for p in st.session_state.library if isinstance(p, dict)]
-            h_index = ResearchAnalytics.calculate_h_index(citations)
-            impact_factor = ResearchAnalytics.calculate_impact_factor(st.session_state.library)
-            
-            col_i1, col_i2, col_i3 = st.columns(3)
-            with col_i1:
-                st.markdown(f"""
-                <div class="impact-score">
-                    <h2>{h_index}</h2>
-                    <p>h-index</p>
-                </div>
-                """, unsafe_allow_html=True)
-            with col_i2:
-                st.markdown(f"""
-                <div class="impact-score">
-                    <h2>{impact_factor}</h2>
-                    <p>Impact Factor</p>
-                </div>
-                """, unsafe_allow_html=True)
-            with col_i3:
-                avg_citations = sum(citations) / len(citations) if citations else 0
-                st.markdown(f"""
-                <div class="impact-score">
-                    <h2>{avg_citations:.1f}</h2>
-                    <p>Avg Citations</p>
-                </div>
-                """, unsafe_allow_html=True)
-            
-            # Citation distribution
-            if citations:
-                fig_citations = go.Figure(data=[
-                    go.Histogram(
-                        x=citations,
-                        nbinsx=20,
-                        marker_color='#2ecc71'
-                    )
-                ])
-                fig_citations.update_layout(
-                    title="Citation Distribution",
-                    xaxis_title="Citations",
-                    yaxis_title="Number of Papers",
-                    template="plotly_dark",
-                    paper_bgcolor='rgba(0,0,0,0)',
-                    plot_bgcolor='rgba(0,0,0,0)'
-                )
-                st.plotly_chart(fig_citations, use_container_width=True)
-            
-            # Research velocity
-            velocity = ResearchAnalytics.calculate_research_velocity(st.session_state.library)
-            st.markdown("#### Research Velocity")
-            st.markdown(f"""
-            - **Papers per month:** {velocity.get('papers_per_month', 0)}
-            - **Trend:** {velocity.get('trend', 'stable').title()}
-            - **Recent average:** {velocity.get('recent_average', 0)} papers/month
-            """)
-        else:
-            st.info("Build your library to see impact metrics!")
+    # Tabs for different views
+    tab1, tab2, tab3, tab4, tab5 = st.tabs([
+        "📊 Statistics", "🦠 Organisms", "📈 Evolution", "🌍 Environment", "🎯 Events"
+    ])
     
-    with analytics_tabs[3]:  # Time Analysis
-        st.markdown("### ⏱️ Time Analysis")
+    with tab1:
+        st.subheader("Universe Statistics")
         
-        # Research time patterns
-        if st.session_state.search_history:
-            hours = []
-            for search in st.session_state.search_history:
-                if 'timestamp' in search:
-                    try:
-                        dt = datetime.strptime(search['timestamp'], "%Y-%m-%d %H:%M:%S")
-                        hours.append(dt.hour)
-                    except:
-                        pass
+        if len(st.session_state.history) > 1:
+            history_df = pd.DataFrame(st.session_state.history)
             
-            if hours:
-                hour_counts = Counter(hours)
-                
-                fig_time = go.Figure()
-                fig_time.add_trace(go.Scatter(
-                    x=list(range(24)),
-                    y=[hour_counts.get(h, 0) for h in range(24)],
-                    mode='lines+markers',
-                    fill='tozeroy',
-                    line=dict(color='#2ecc71', width=3),
-                    marker=dict(size=8)
-                ))
-                fig_time.update_layout(
-                    title="Research Activity by Hour of Day",
-                    xaxis_title="Hour",
-                    yaxis_title="Activity Count",
-                    template="plotly_dark",
-                    paper_bgcolor='rgba(0,0,0,0)',
-                    plot_bgcolor='rgba(0,0,0,0)'
-                )
-                st.plotly_chart(fig_time, use_container_width=True)
-                
-                # Peak hours
-                peak_hour = max(hour_counts, key=hour_counts.get)
-                st.info(f"📊 Your peak research hour is {peak_hour}:00")
-        
-        # Project timelines
-        if st.session_state.projects:
-            st.markdown("#### Active Project Timelines")
+            col1, col2 = st.columns(2)
             
-            fig_timeline = go.Figure()
-            
-            for idx, project in enumerate(st.session_state.projects):
-                if project.get('status') in ['Active', 'Planning']:
-                    start = datetime.strptime(project['start_date'], "%Y-%m-%d")
-                    end = datetime.strptime(project['end_date'], "%Y-%m-%d")
-                    
-                    fig_timeline.add_trace(go.Scatter(
-                        x=[start, end],
-                        y=[project['name'], project['name']],
-                        mode='lines+markers',
-                        name=project['name'],
-                        line=dict(width=10),
-                        marker=dict(size=12)
+            with col1:
+                if show_population_graph:
+                    fig = go.Figure()
+                    fig.add_trace(go.Scatter(
+                        x=history_df['generation'],
+                        y=history_df['total_population'],
+                        mode='lines',
+                        name='Total Population',
+                        line=dict(color='#667eea', width=3)
                     ))
-            
-            fig_timeline.update_layout(
-                title="Project Timelines",
-                xaxis_title="Date",
-                yaxis_title="Project",
-                template="plotly_dark",
-                paper_bgcolor='rgba(0,0,0,0)',
-                plot_bgcolor='rgba(0,0,0,0)',
-                height=400
-            )
-            st.plotly_chart(fig_timeline, use_container_width=True)
-    
-    with analytics_tabs[4]:  # Goals
-        st.markdown("### 🎯 Research Goals & Progress")
-        
-        # Set goals
-        with st.expander("➕ Set New Goal"):
-            goal_type = st.selectbox("Goal Type", ["Papers to Read", "Notes to Write", "Projects to Complete", "Custom"])
-            goal_target = st.number_input("Target", min_value=1, value=10)
-            goal_deadline = st.date_input("Deadline")
-            
-            if st.button("Set Goal"):
-                if 'goals' not in st.session_state:
-                    st.session_state.goals = []
-                st.session_state.goals.append({
-                    "type": goal_type,
-                    "target": goal_target,
-                    "current": 0,
-                    "deadline": goal_deadline.strftime("%Y-%m-%d"),
-                    "created": datetime.now().strftime("%Y-%m-%d")
-                })
-                save_state()
-                st.success("Goal set!")
-                st.rerun()
-        
-        # Display goals
-        if 'goals' in st.session_state and st.session_state.goals:
-            for goal_idx, goal in enumerate(st.session_state.goals):
-                progress = (goal['current'] / goal['target']) * 100
-                days_left = (datetime.strptime(goal['deadline'], "%Y-%m-%d") - datetime.now()).days
-                
-                st.markdown(f"""
-                <div class="analysis-card">
-                    <h4>{goal['type']}</h4>
-                    <p>Target: {goal['target']} | Current: {goal['current']} | Progress: {progress:.0f}%</p>
-                    <p>Deadline: {goal['deadline']} ({days_left} days remaining)</p>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                st.progress(progress / 100)
-                
-                col_g1, col_g2 = st.columns([1, 5])
-                with col_g1:
-                    if st.button("Update", key=f"update_goal_{goal_idx}"):
-                        st.session_state.updating_goal = goal_idx
-                with col_g2:
-                    if st.button("Delete Goal", key=f"del_goal_{goal_idx}"):
-                        st.session_state.goals.pop(goal_idx)
-                        save_state()
-                        st.rerun()
-        else:
-            st.info("🎯 Set research goals to track your progress!")
-
-elif st.session_state.current_tool == "🤝 Collaboration":
-    st.markdown("## 🤝 Research Collaboration Hub")
-    st.markdown("Find collaborators, manage teams, and share insights")
-    
-    collab_tabs = st.tabs(["👥 Find Collaborators", "🏢 My Teams", "💬 Discussions", "📤 Shared Resources"])
-    
-    with collab_tabs[0]:  # Find Collaborators
-        st.markdown("### 👥 Find Potential Collaborators")
-        
-        # User's research profile
-        with st.expander("🎓 Your Research Profile", expanded=False):
-            interests = st.text_area("Research Interests (one per line)", 
-                                     value="\n".join(st.session_state.research_profile.get('interests', [])))
-            expertise = st.text_area("Expertise Areas (one per line)",
-                                    value="\n".join(st.session_state.research_profile.get('expertise_areas', [])))
-            
-            if st.button("Update Profile"):
-                st.session_state.research_profile['interests'] = [i.strip() for i in interests.split('\n') if i.strip()]
-                st.session_state.research_profile['expertise_areas'] = [e.strip() for e in expertise.split('\n') if e.strip()]
-                save_state()
-                st.success("Profile updated!")
-        
-        # Search for collaborators
-        st.markdown("#### Search Researchers")
-        search_field = st.text_input("Search by field or expertise")
-        
-        if st.button("Find Collaborators"):
-            # Simulated researcher database
-            mock_researchers = [
-                {
-                    "name": "Dr. Sarah Chen",
-                    "institution": "MIT",
-                    "interests": ["quantum computing", "machine learning", "algorithms"],
-                    "h_index": 45,
-                    "papers": 87
-                },
-                {
-                    "name": "Prof. James Rodriguez",
-                    "institution": "Stanford University",
-                    "interests": ["artificial intelligence", "neural networks", "robotics"],
-                    "h_index": 52,
-                    "papers": 124
-                },
-                {
-                    "name": "Dr. Emily Watson",
-                    "institution": "Oxford University",
-                    "interests": ["genomics", "bioinformatics", "computational biology"],
-                    "h_index": 38,
-                    "papers": 65
-                },
-                {
-                    "name": "Prof. Michael Zhang",
-                    "institution": "Tsinghua University",
-                    "interests": ["renewable energy", "materials science", "nanotechnology"],
-                    "h_index": 41,
-                    "papers": 93
-                },
-                {
-                    "name": "Dr. Laura Martinez",
-                    "institution": "ETH Zurich",
-                    "interests": ["climate modeling", "data science", "environmental physics"],
-                    "h_index": 36,
-                    "papers": 71
-                }
-            ]
-            
-            # Find matches
-            user_interests = set(i.lower() for i in st.session_state.research_profile.get('interests', []))
-            if user_interests:
-                recommender = CollaborationRecommender()
-                matches = recommender.find_potential_collaborators(
-                    list(user_interests),
-                    mock_researchers
-                )
-                
-                if matches:
-                    st.markdown("#### 🎯 Recommended Collaborators")
-                    for match in matches:
-                        st.markdown(f"""
-                        <div class="feature-card">
-                            <h4>{match['name']} - {match['institution']}</h4>
-                            <p><strong>Match Score:</strong> {match['overlap_score']}%</p>
-                            <p><strong>Common Interests:</strong> {', '.join(match['common_interests'])}</p>
-                        </div>
-                        """, unsafe_allow_html=True)
-                        
-                        col_c1, col_c2, col_c3 = st.columns(3)
-                        with col_c1:
-                            if st.button("📧 Contact", key=f"contact_{match['name']}"):
-                                st.info(f"Opening contact form for {match['name']}")
-                        with col_c2:
-                            if st.button("📄 View Profile", key=f"profile_{match['name']}"):
-                                st.info(f"Viewing profile: {match['name']}")
-                        with col_c3:
-                            if st.button("➕ Add to Network", key=f"add_{match['name']}"):
-                                st.session_state.collaborations.append(match)
-                                save_state()
-                                st.success("Added to your network!")
-                else:
-                    st.warning("No matches found. Try updating your research interests.")
-            else:
-                st.warning("Please set your research interests in your profile first.")
-    
-    with collab_tabs[1]:  # My Teams
-        st.markdown("### 🏢 Research Teams")
-        
-        # Create new team
-        with st.expander("➕ Create New Team"):
-            team_name = st.text_input("Team Name")
-            team_desc = st.text_area("Description")
-            team_members = st.text_input("Members (comma-separated emails)")
-            
-            if st.button("Create Team"):
-                if team_name:
-                    if 'teams' not in st.session_state:
-                        st.session_state.teams = []
-                    st.session_state.teams.append({
-                        "name": team_name,
-                        "description": team_desc,
-                        "members": [m.strip() for m in team_members.split(',') if m.strip()],
-                        "created": datetime.now().strftime("%Y-%m-%d"),
-                        "projects": [],
-                        "discussions": []
-                    })
-                    save_state()
-                    st.success(f"Team '{team_name}' created!")
-                    st.rerun()
-        
-        # Display teams
-        if 'teams' in st.session_state and st.session_state.teams:
-            for team_idx, team in enumerate(st.session_state.teams):
-                with st.expander(f"👥 {team['name']} ({len(team['members'])} members)"):
-                    st.markdown(f"**Description:** {team['description']}")
-                    st.markdown(f"**Members:** {', '.join(team['members'])}")
-                    st.markdown(f"**Created:** {team['created']}")
-                    
-                    # Team actions
-                    col_t1, col_t2, col_t3 = st.columns(3)
-                    with col_t1:
-                        if st.button("📧 Message Team", key=f"msg_team_{team_idx}"):
-                            st.info("Opening team chat...")
-                    with col_t2:
-                        if st.button("➕ Add Member", key=f"add_member_{team_idx}"):
-                            st.session_state.adding_member = team_idx
-                    with col_t3:
-                        if st.button("🔗 Share Project", key=f"share_proj_{team_idx}"):
-                            st.info("Select project to share...")
-        else:
-            st.info("No teams yet. Create your first research team!")
-    
-    with collab_tabs[2]:  # Discussions
-        st.markdown("### 💬 Research Discussions")
-        
-        # Discussion topics
-        topics = [
-            {"title": "Latest advances in quantum computing", "replies": 12, "date": "2024-11-08"},
-            {"title": "Reproducibility in machine learning research", "replies": 8, "date": "2024-11-07"},
-            {"title": "Best practices for data visualization", "replies": 15, "date": "2024-11-06"},
-            {"title": "Interdisciplinary collaboration tips", "replies": 6, "date": "2024-11-05"}
-        ]
-        
-        for topic in topics:
-            st.markdown(f"""
-            <div class="tool-card">
-                <h4>💬 {topic['title']}</h4>
-                <p>📝 {topic['replies']} replies | 📅 {topic['date']}</p>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            if st.button("Join Discussion", key=f"join_{topic['title']}"):
-                st.info("Opening discussion thread...")
-        
-        # Start new discussion
-        with st.expander("➕ Start New Discussion"):
-            disc_title = st.text_input("Discussion Title")
-            disc_content = st.text_area("Your question or topic")
-            disc_tags = st.text_input("Tags (comma-separated)")
-            
-            if st.button("Post Discussion"):
-                if disc_title and disc_content:
-                    st.success("Discussion posted! (Feature in development)")
-    
-    with collab_tabs[3]:  # Shared Resources
-        st.markdown("### 📤 Shared Research Resources")
-        
-        # Share from library
-        if st.session_state.library:
-            st.markdown("#### Share from Your Library")
-            paper_to_share = st.selectbox(
-                "Select paper to share",
-                [""] + [p['title'] for p in st.session_state.library if isinstance(p, dict)]
-            )
-            
-            if paper_to_share:
-                share_with = st.multiselect(
-                    "Share with",
-                    ["Public", "My Teams", "Specific Collaborators"]
-                )
-                
-                if st.button("Share"):
-                    st.success(f"Shared '{paper_to_share}' successfully!")
-        
-        # Shared with me
-        st.markdown("#### 📥 Resources Shared With You")
-        st.info("No shared resources yet. Connect with collaborators to see their shares!")
-
-elif st.session_state.current_tool == "🧬 Hypothesis Lab":
-    st.markdown("## 🧬 Hypothesis Testing Laboratory")
-    st.markdown("Develop, test, and refine research hypotheses with AI assistance")
-    
-    hyp_tabs = st.tabs(["💡 Generate Hypotheses", "🧪 Active Hypotheses", "📊 Test Results", "🎯 Methodology"])
-    
-    with hyp_tabs[0]:  # Generate
-        st.markdown("### 💡 AI-Powered Hypothesis Generation")
-        
-        research_area = st.text_input("Research Area or Topic")
-        context = st.text_area("Background/Context (optional)", height=100)
-        
-        col_h1, col_h2 = st.columns(2)
-        with col_h1:
-            hypothesis_type = st.selectbox(
-                "Hypothesis Type",
-                ["Causal", "Correlational", "Comparative", "Descriptive", "Exploratory"]
-            )
-        with col_h2:
-            num_hypotheses = st.number_input("Number to Generate", 1, 10, 3)
-        
-        if st.button("🧠 Generate Hypotheses"):
-            if research_area and research_assistant:
-                with st.spinner("Generating hypotheses with AI..."):
-                    prompt = f"""Generate {num_hypotheses} testable research hypotheses for the following:
-
-Research Area: {research_area}
-Hypothesis Type: {hypothesis_type}
-Context: {context if context else 'None provided'}
-
-For each hypothesis:
-1. State the hypothesis clearly
-2. Explain the rationale
-3. Identify key variables
-4. Suggest measurement methods
-5. Note potential confounds
-
-Format each hypothesis clearly with numbering."""
-                    
-                    try:
-                        response = model.generate_content(prompt)
-                        st.markdown("### 🎯 Generated Hypotheses")
-                        st.markdown(response.text)
-                        
-                        # Save option
-                        if st.button("💾 Save These Hypotheses"):
-                            st.session_state.hypotheses.append({
-                                "area": research_area,
-                                "type": hypothesis_type,
-                                "content": response.text,
-                                "generated": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                                "status": "Draft"
-                            })
-                            save_state()
-                            st.success("Hypotheses saved!")
-                            st.rerun()
-                    except Exception as e:
-                        st.error(f"Error generating hypotheses: {str(e)}")
-    
-    with hyp_tabs[1]:  # Active
-        st.markdown("### 🧪 Your Research Hypotheses")
-        
-        if st.session_state.hypotheses:
-            for hyp_idx, hypothesis in enumerate(st.session_state.hypotheses):
-                status_color = {
-                    "Draft": "#3498db",
-                    "Testing": "#e67e22",
-                    "Confirmed": "#2ecc71",
-                    "Rejected": "#e74c3c",
-                    "Refined": "#9b59b6"
-                }.get(hypothesis.get('status', 'Draft'), "#95a5a6")
-                
-                with st.expander(f"📋 {hypothesis['area']} - {hypothesis.get('status', 'Draft')}"):
-                    st.markdown(f"""
-                    <div class="feature-card">
-                        <h4>{hypothesis['area']}</h4>
-                        <p><strong>Type:</strong> {hypothesis['type']}</p>
-                        <p><strong>Status:</strong> <span style="color: {status_color};">⬤</span> {hypothesis.get('status', 'Draft')}</p>
-                        <p><strong>Generated:</strong> {hypothesis['generated']}</p>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-                    st.markdown("**Hypothesis Details:**")
-                    st.markdown(hypothesis['content'][:500] + "...")
-                    
-                    # Actions
-                    col_a1, col_a2, col_a3, col_a4 = st.columns(4)
-                    with col_a1:
-                        new_status = st.selectbox(
-                            "Update Status",
-                            ["Draft", "Testing", "Confirmed", "Rejected", "Refined"],
-                            key=f"status_hyp_{hyp_idx}",
-                            index=["Draft", "Testing", "Confirmed", "Rejected", "Refined"].index(hypothesis.get('status', 'Draft'))
-                        )
-                        if new_status != hypothesis.get('status'):
-                            hypothesis['status'] = new_status
-                            save_state()
-                            st.rerun()
-                    
-                    with col_a2:
-                        if st.button("🧪 Design Experiment", key=f"exp_{hyp_idx}"):
-                            if research_assistant:
-                                experiments = research_assistant.suggest_experiments(hypothesis['content'][:200])
-                                st.session_state.experiment_suggestion = experiments
-                                st.rerun()
-                    
-                    with col_a3:
-                        if st.button("📊 Add Data", key=f"data_{hyp_idx}"):
-                            st.session_state.adding_data = hyp_idx
-                    
-                    with col_a4:
-                        if st.button("🗑️ Delete", key=f"del_hyp_{hyp_idx}"):
-                            st.session_state.hypotheses.pop(hyp_idx)
-                            save_state()
-                            st.rerun()
-        else:
-            st.info("🧪 No hypotheses yet. Generate some using AI assistance!")
-    
-    with hyp_tabs[2]:  # Results
-        st.markdown("### 📊 Experimental Results")
-        
-        # Add experimental results
-        with st.expander("➕ Add New Results"):
-            result_hypothesis = st.selectbox(
-                "Related Hypothesis",
-                [""] + [h['area'] for h in st.session_state.hypotheses]
-            )
-            result_data = st.text_area("Results Summary")
-            result_significance = st.number_input("p-value", 0.0, 1.0, 0.05, 0.001, format="%.3f")
-            result_effect_size = st.number_input("Effect Size", 0.0, 10.0, 0.5, 0.1)
-            
-            if st.button("Save Results"):
-                if result_hypothesis and result_data:
-                    if 'results' not in st.session_state:
-                        st.session_state.results = []
-                    st.session_state.results.append({
-                        "hypothesis": result_hypothesis,
-                        "data": result_data,
-                        "p_value": result_significance,
-                        "effect_size": result_effect_size,
-                        "date": datetime.now().strftime("%Y-%m-%d"),
-                        "significant": result_significance < 0.05
-                    })
-                    save_state()
-                    st.success("Results saved!")
-                    st.rerun()
-        
-        # Display results
-        if 'results' in st.session_state and st.session_state.results:
-            for result in st.session_state.results:
-                significance_badge = "✅ Significant" if result['significant'] else "⚠️ Not Significant"
-                badge_color = "#2ecc71" if result['significant'] else "#e67e22"
-                
-                st.markdown(f"""
-                <div class="analysis-card">
-                    <h4>{result['hypothesis']}</h4>
-                    <p><strong>Date:</strong> {result['date']}</p>
-                    <p><strong>p-value:</strong> {result['p_value']}</p>
-                    <p><strong>Effect Size:</strong> {result['effect_size']}</p>
-                    <p><span style="color: {badge_color}; font-weight: bold;">{significance_badge}</span></p>
-                    <p>{result['data']}</p>
-                </div>
-                """, unsafe_allow_html=True)
-        else:
-            st.info("📊 No experimental results recorded yet")
-    
-    with hyp_tabs[3]:  # Methodology
-        st.markdown("### 🎯 Research Methodology Designer")
-        
-        method_hypothesis = st.text_area("Enter your hypothesis", height=100)
-        
-        if st.button("🧠 Generate Methodology"):
-            if method_hypothesis and research_assistant:
-                with st.spinner("Designing research methodology..."):
-                    methodology = research_assistant.generate_methodology(method_hypothesis)
-                    
-                    st.markdown("### 📋 Recommended Methodology")
-                    st.markdown(methodology['methodology'])
-                    
-                    if st.button("💾 Save Methodology"):
-                        st.session_state.notes.append({
-                            "title": f"Methodology: {method_hypothesis[:50]}",
-                            "content": methodology['methodology'],
-                            "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                            "tags": ["methodology"]
-                        })
-                        save_state()
-                        st.success("Methodology saved to notes!")
-
-elif st.session_state.current_tool == "📝 Literature Review":
-    st.markdown("## 📝 AI-Powered Literature Review Generator")
-    st.markdown("Create comprehensive literature reviews with intelligent synthesis")
-    
-    review_tabs = st.tabs(["📋 Generate Review", "🗂️ Organize Papers", "✍️ Write Sections", "📊 Analysis"])
-    
-    with review_tabs[0]:  # Generate
-        st.markdown("### 📋 Literature Review Generator")
-        
-        review_topic = st.text_input("Review Topic")
-        review_scope = st.text_area("Scope and Research Questions", height=100)
-        
-        col_r1, col_r2 = st.columns(2)
-        with col_r1:
-            review_type = st.selectbox(
-                "Review Type",
-                ["Narrative Review", "Systematic Review", "Meta-Analysis", "Scoping Review", "Critical Review"]
-            )
-        with col_r2:
-            target_length = st.selectbox("Target Length", ["Short (2-3 pages)", "Medium (5-8 pages)", "Long (10+ pages)"])
-        
-        if st.button("🧠 Generate Review Outline"):
-            if review_topic and research_assistant:
-                with st.spinner("Generating comprehensive review outline..."):
-                    prompt = f"""Create a detailed literature review outline for:
-
-Topic: {review_topic}
-Type: {review_type}
-Scope: {review_scope}
-Length: {target_length}
-
-Include:
-1. **Introduction**
-   - Background
-   - Significance
-   - Research questions/objectives
-   - Scope and limitations
-
-2. **Methodology**
-   - Search strategy
-   - Inclusion/exclusion criteria
-   - Quality assessment
-
-3. **Main Body Sections** (4-6 thematic sections)
-   - For each section: theme, key questions, expected papers
-
-4. **Synthesis and Discussion**
-   - Common findings
-   - Contradictions
-   - Gaps in literature
-
-5. **Conclusion**
-   - Summary
-   - Implications
-   - Future directions
-
-6. **Suggested Timeline** for completion
-
-Be specific and detailed."""
-                    
-                    try:
-                        response = model.generate_content(prompt)
-                        st.markdown("### 📄 Generated Review Outline")
-                        st.markdown(response.text)
-                        
-                        # Save and export options
-                        col_s1, col_s2, col_s3 = st.columns(3)
-                        with col_s1:
-                            if st.button("💾 Save Outline"):
-                                st.session_state.notes.append({
-                                    "title": f"Literature Review: {review_topic}",
-                                    "content": response.text,
-                                    "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                                    "tags": ["literature review", "outline"]
-                                })
-                                save_state()
-                                st.success("Outline saved!")
-                        
-                        with col_s2:
-                            if st.button("📥 Export to Word"):
-                                st.info("Export functionality (in development)")
-                        
-                        with col_s3:
-                            if st.button("🔄 Generate Different Outline"):
-                                st.rerun()
-                    
-                    except Exception as e:
-                        st.error(f"Error: {str(e)}")
-    
-    with review_tabs[1]:  # Organize
-        st.markdown("### 🗂️ Organize Papers for Review")
-        
-        # Paper organization matrix
-        st.markdown("#### Thematic Organization")
-        
-        themes = st.text_area("Enter themes (one per line)", 
-                             placeholder="Theme 1: Methodology\nTheme 2: Applications\nTheme 3: Challenges")
-        
-        if themes:
-            theme_list = [t.strip() for t in themes.split('\n') if t.strip()]
-            
-            st.markdown("#### Assign Papers to Themes")
-            for paper in st.session_state.library[:10]:  # Show first 10
-                with st.expander(f"📄 {paper.get('title', 'Untitled')}"):
-                    assigned_themes = st.multiselect(
-                        "Relevant themes",
-                        theme_list,
-                        key=f"themes_{paper.get('title', '')[:20]}"
+                    fig.update_layout(
+                        title="Population Over Time",
+                        xaxis_title="Generation",
+                        yaxis_title="Population",
+                        template="plotly_dark",
+                        height=400
                     )
-                    
-                    key_points = st.text_area(
-                        "Key points from this paper",
-                        key=f"points_{paper.get('title', '')[:20]}",
-                        height=80
-                    )
-                    
-                    if st.button("Save", key=f"save_org_{paper.get('title', '')[:20]}"):
-                        # Store organization data
-                        if 'paper_organization' not in st.session_state:
-                            st.session_state.paper_organization = {}
-                        st.session_state.paper_organization[paper.get('title', '')] = {
-                            "themes": assigned_themes,
-                            "key_points": key_points
-                        }
-                        save_state()
-                        st.success("Saved!")
-    
-    with review_tabs[2]:  # Write
-        st.markdown("### ✍️ AI Writing Assistant")
-        
-        section_to_write = st.selectbox(
-            "Section to Write",
-            ["Introduction", "Methodology", "Literature Analysis", "Discussion", "Conclusion"]
-        )
-        
-        section_guidance = st.text_area(
-            "Key points to cover",
-            placeholder="List main points, findings, or arguments to include..."
-        )
-        
-        writing_style = st.selectbox(
-            "Writing Style",
-            ["Academic/Formal", "Clear and Accessible", "Technical/Specialized", "Critical/Analytical"]
-        )
-        
-        if st.button("✍️ Generate Section"):
-            if section_guidance and research_assistant:
-                with st.spinner(f"Writing {section_to_write} section..."):
-                    prompt = f"""Write a {section_to_write} section for a literature review with the following:
-
-Style: {writing_style}
-Key Points to Cover:
-{section_guidance}
-
-Requirements:
-- Use appropriate academic tone
-- Include transition sentences
-- Reference integration (use [Author, Year] format)
-- Clear structure with topic sentences
-- Critical analysis where appropriate
-- Length: approximately 300-500 words
-
-Write the complete section:"""
-                    
-                    try:
-                        response = model.generate_content(prompt)
-                        st.markdown(f"### 📝 Generated {section_to_write}")
-                        st.markdown(response.text)
-                        
-                        # Edit and save options
-                        edited_text = st.text_area(
-                            "Edit the generated text",
-                            value=response.text,
-                            height=300,
-                            key="edit_section"
-                        )
-                        
-                        col_w1, col_w2 = st.columns(2)
-                        with col_w1:
-                            if st.button("💾 Save Section"):
-                                st.session_state.notes.append({
-                                    "title": f"{section_to_write} - Literature Review",
-                                    "content": edited_text,
-                                    "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                                    "tags": ["literature review", section_to_write.lower()]
-                                })
-                                save_state()
-                                st.success("Section saved!")
-                        
-                        with col_w2:
-                            if st.button("🔄 Regenerate"):
-                                st.rerun()
-                    
-                    except Exception as e:
-                        st.error(f"Error: {str(e)}")
-    
-    with review_tabs[3]:  # Analysis
-        st.markdown("### 📊 Literature Analysis Dashboard")
-        
-        if st.session_state.library:
-            # Temporal analysis
-            st.markdown("#### Publication Timeline")
-            paper_dates = [p.get('date', '') for p in st.session_state.library if p.get('date')]
-            if paper_dates:
-                years = [d.split('-')[0] for d in paper_dates]
-                year_counts = Counter(years)
+                    st.plotly_chart(fig, use_container_width=True)
                 
-                fig_years = go.Figure(data=[
-                    go.Bar(x=list(year_counts.keys()), y=list(year_counts.values()), marker_color='#2ecc71')
-                ])
-                fig_years.update_layout(
-                    title="Papers by Publication Year",
-                    xaxis_title="Year",
-                    yaxis_title="Number of Papers",
+                if show_complexity_chart:
+                    fig = go.Figure()
+                    fig.add_trace(go.Scatter(
+                        x=history_df['generation'],
+                        y=history_df['max_complexity'],
+                        mode='lines',
+                        name='Max Complexity',
+                        line=dict(color='#f093fb', width=3),
+                        fill='tozeroy'
+                    ))
+                    fig.update_layout(
+                        title="Complexity Evolution",
+                        xaxis_title="Generation",
+                        yaxis_title="Complexity Level",
+                        template="plotly_dark",
+                        height=400
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
+            
+            with col2:
+                if show_diversity_index:
+                    fig = go.Figure()
+                    fig.add_trace(go.Scatter(
+                        x=history_df['generation'],
+                        y=history_df['species_count'],
+                        mode='lines',
+                        name='Species Count',
+                        line=dict(color='#4facfe', width=3)
+                    ))
+                    fig.update_layout(
+                        title="Biodiversity Over Time",
+                        xaxis_title="Generation",
+                        yaxis_title="Number of Species",
+                        template="plotly_dark",
+                        height=400
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
+                
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(
+                    x=history_df['generation'],
+                    y=history_df['max_intelligence'],
+                    mode='lines',
+                    name='Max Intelligence',
+                    line=dict(color='#43e97b', width=3)
+                ))
+                fig.update_layout(
+                    title="Intelligence Evolution",
+                    xaxis_title="Generation",
+                    yaxis_title="Intelligence Level",
                     template="plotly_dark",
-                    paper_bgcolor='rgba(0,0,0,0)',
-                    plot_bgcolor='rgba(0,0,0,0)'
+                    height=400
                 )
-                st.plotly_chart(fig_years, use_container_width=True)
+                st.plotly_chart(fig, use_container_width=True)
+        
+        # Distribution charts
+        if st.session_state.universe.organisms:
+            col1, col2 = st.columns(2)
             
-            # Methodology analysis
-            st.markdown("#### Research Methods Distribution")
-            methods = ["Experimental", "Survey", "Case Study", "Meta-Analysis", "Theoretical"]
-            method_counts = [15, 23, 12, 8, 19]  # Simulated data
+            with col1:
+                life_types = [o.life_type.value for o in st.session_state.universe.organisms]
+                fig = px.pie(
+                    names=life_types,
+                    title="Life Type Distribution",
+                    color_discrete_sequence=px.colors.sequential.Plasma
+                )
+                fig.update_layout(template="plotly_dark", height=300)
+                st.plotly_chart(fig, use_container_width=True)
             
-            fig_methods = go.Figure(data=[
-                go.Pie(labels=methods, values=method_counts, marker=dict(colors=['#2ecc71', '#3498db', '#e67e22', '#9b59b6', '#e74c3c']))
-            ])
-            fig_methods.update_layout(
-                title="Research Methodologies",
-                template="plotly_dark",
-                paper_bgcolor='rgba(0,0,0,0)'
-            )
-            st.plotly_chart(fig_methods, use_container_width=True)
-            
-            # Generate synthesis
-            if st.button("🧠 Generate Literature Synthesis"):
-                with st.spinner("Analyzing and synthesizing literature..."):
-                    # Continuation from line where it was cut off:
-# This continues after: synthesis_prompt = f"""Analyze the following research library and provide a synthesis:
-
-                    synthesis_prompt = f"""Analyze the following research library and provide a synthesis:
-
-Number of papers: {len(st.session_state.library)}
-Key topics: {', '.join(ResearchAnalytics.extract_keywords(' '.join([str(p.get('title', '')) for p in st.session_state.library if isinstance(p, dict)]))[:10])}
-
-Provide:
-1. **Overview**: General patterns and themes
-2. **Key Findings**: Major discoveries across papers
-3. **Methodological Trends**: Common approaches
-4. **Research Gaps**: What's missing
-5. **Emerging Directions**: Future opportunities
-6. **Contradictions**: Areas of disagreement
-7. **Implications**: Practical applications
-
-Be specific and cite examples from the literature."""
-                    
-                    try:
-                        response = model.generate_content(synthesis_prompt)
-                        st.markdown("### ðŸŠ Literature Synthesis")
-                        st.markdown(response.text)
-                        
-                        if st.button("ðŸ'¾ Save Synthesis"):
-                            st.session_state.notes.append({
-                                "title": "Literature Synthesis",
-                                "content": response.text,
-                                "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                                "tags": ["synthesis", "analysis"]
-                            })
-                            save_state()
-                            st.success("Synthesis saved!")
-                    except Exception as e:
-                        st.error(f"Error: {str(e)}")
-        else:
-            st.info("Add papers to your library to see analysis")
-
-elif st.session_state.current_tool == "ðŸŽ Citation Manager":
-    st.markdown("## ðŸŽ Citation & Reference Manager")
-    st.markdown("Manage citations, generate bibliographies, and track references")
+            with col2:
+                complexity_levels = [o.complexity.name for o in st.session_state.universe.organisms]
+                fig = px.histogram(
+                    x=complexity_levels,
+                    title="Complexity Distribution",
+                    color_discrete_sequence=['#667eea']
+                )
+                fig.update_layout(template="plotly_dark", height=300)
+                st.plotly_chart(fig, use_container_width=True)
     
-    cite_tabs = st.tabs(["ðŸš References", "âœï¸ Generate Citations", "ðŸŠ Citation Network", "ðŸ¥ Export"])
-    
-    with cite_tabs[0]:  # References
-        st.markdown("### ðŸš Your Reference Library")
+    with tab2:
+        st.subheader("Current Organisms")
         
-        # Add new reference
-        with st.expander("âž• Add New Reference"):
-            ref_type = st.selectbox("Reference Type", 
-                ["Journal Article", "Book", "Conference Paper", "Thesis", "Website", "Patent"])
+        if st.session_state.universe.organisms:
+            # Sort organisms
+            sort_by = st.selectbox("Sort by:", 
+                ["Population", "Intelligence", "Complexity", "Technology", "Age"])
             
-            col_ref1, col_ref2 = st.columns(2)
-            with col_ref1:
-                ref_authors = st.text_input("Authors (comma-separated)")
-                ref_title = st.text_input("Title")
-                ref_year = st.number_input("Year", 1900, 2025, 2024)
-            with col_ref2:
-                ref_journal = st.text_input("Journal/Publisher")
-                ref_volume = st.text_input("Volume/Issue")
-                ref_pages = st.text_input("Pages")
-            
-            ref_doi = st.text_input("DOI (optional)")
-            ref_url = st.text_input("URL (optional)")
-            
-            if st.button("Add Reference"):
-                if ref_authors and ref_title:
-                    if 'references' not in st.session_state:
-                        st.session_state.references = []
-                    
-                    st.session_state.references.append({
-                        "type": ref_type,
-                        "authors": ref_authors,
-                        "title": ref_title,
-                        "year": ref_year,
-                        "journal": ref_journal,
-                        "volume": ref_volume,
-                        "pages": ref_pages,
-                        "doi": ref_doi,
-                        "url": ref_url,
-                        "added": datetime.now().strftime("%Y-%m-%d")
-                    })
-                    save_state()
-                    st.success("Reference added!")
-                    st.rerun()
-        
-        # Display references
-        if 'references' not in st.session_state:
-            st.session_state.references = []
-        
-        if st.session_state.references:
-            st.markdown("#### Your References")
-            for idx, ref in enumerate(st.session_state.references):
-                with st.expander(f"{idx + 1}. {ref['title'][:60]}..."):
-                    st.markdown(f"**Authors:** {ref['authors']}")
-                    st.markdown(f"**Year:** {ref['year']}")
-                    st.markdown(f"**Source:** {ref['journal']}")
-                    if ref.get('doi'):
-                        st.markdown(f"**DOI:** {ref['doi']}")
-                    
-                    col_c1, col_c2, col_c3 = st.columns(3)
-                    with col_c1:
-                        if st.button("ðŸ‹ Copy Citation", key=f"copy_cite_{idx}"):
-                            st.info("Citation copied to clipboard!")
-                    with col_c2:
-                        if st.button("âœï¸ Edit", key=f"edit_ref_{idx}"):
-                            st.session_state.editing_ref = idx
-                    with col_c3:
-                        if st.button("ðŸ—'ï¸ Delete", key=f"del_ref_{idx}"):
-                            st.session_state.references.pop(idx)
-                            save_state()
-                            st.rerun()
-        else:
-            st.info("No references yet. Add your first reference above!")
-    
-    with cite_tabs[1]:  # Generate
-        st.markdown("### âœï¸ Citation Generator")
-        
-        citation_style = st.selectbox(
-            "Citation Style",
-            ["APA 7th", "MLA 9th", "Chicago", "Harvard", "IEEE", "Vancouver", "Nature"]
-        )
-        
-        if st.session_state.references:
-            selected_refs = st.multiselect(
-                "Select references to cite",
-                [f"{r['authors']} ({r['year']}): {r['title'][:40]}" for r in st.session_state.references]
-            )
-            
-            if st.button("Generate Citations"):
-                if selected_refs:
-                    st.markdown(f"### Citations in {citation_style} format:")
-                    
-                    for sel in selected_refs:
-                        # Find the reference
-                        ref_idx = next(i for i, r in enumerate(st.session_state.references) 
-                                     if f"{r['authors']} ({r['year']}): {r['title'][:40]}" == sel)
-                        ref = st.session_state.references[ref_idx]
-                        
-                        # Generate citation based on style
-                        if citation_style == "APA 7th":
-                            citation = f"{ref['authors']} ({ref['year']}). {ref['title']}. *{ref['journal']}*, *{ref['volume']}*, {ref['pages']}."
-                        elif citation_style == "MLA 9th":
-                            citation = f"{ref['authors']}. \"{ref['title']}.\" *{ref['journal']}*, vol. {ref['volume']}, {ref['year']}, pp. {ref['pages']}."
-                        elif citation_style == "Chicago":
-                            citation = f"{ref['authors']}. \"{ref['title']}.\" *{ref['journal']}* {ref['volume']} ({ref['year']}): {ref['pages']}."
-                        else:
-                            citation = f"{ref['authors']} ({ref['year']}). {ref['title']}. {ref['journal']}, {ref['volume']}, {ref['pages']}."
-                        
-                        if ref.get('doi'):
-                            citation += f" https://doi.org/{ref['doi']}"
-                        
-                        st.code(citation, language="text")
-                        
-                    # Copy all button
-                    if st.button("ðŸ‹ Copy All Citations"):
-                        st.success("All citations copied!")
-        else:
-            st.info("Add references first to generate citations")
-        
-        # In-text citation generator
-        st.markdown("---")
-        st.markdown("#### Quick In-Text Citation")
-        
-        author_cite = st.text_input("Author name")
-        year_cite = st.number_input("Year", 1900, 2025, 2024, key="year_cite")
-        page_cite = st.text_input("Page number (optional)")
-        
-        if author_cite and st.button("Generate In-Text"):
-            if citation_style == "APA 7th":
-                in_text = f"({author_cite}, {year_cite}" + (f", p. {page_cite}" if page_cite else "") + ")"
-            elif citation_style == "MLA 9th":
-                in_text = f"({author_cite} {page_cite})" if page_cite else f"({author_cite})"
+            if sort_by == "Population":
+                sorted_orgs = sorted(st.session_state.universe.organisms, 
+                                   key=lambda x: x.population, reverse=True)
+            elif sort_by == "Intelligence":
+                sorted_orgs = sorted(st.session_state.universe.organisms, 
+                                   key=lambda x: x.intelligence, reverse=True)
+            elif sort_by == "Complexity":
+                sorted_orgs = sorted(st.session_state.universe.organisms, 
+                                   key=lambda x: x.complexity.value, reverse=True)
+            elif sort_by == "Technology":
+                sorted_orgs = sorted(st.session_state.universe.organisms, 
+                                   key=lambda x: x.technological_level, reverse=True)
             else:
-                in_text = f"({author_cite}, {year_cite})"
+                sorted_orgs = sorted(st.session_state.universe.organisms, 
+                                   key=lambda x: x.age, reverse=True)
             
-            st.code(in_text, language="text")
-    
-    with cite_tabs[2]:  # Network
-        st.markdown("### ðŸŠ Citation Network Analysis")
-        
-        if st.session_state.library and len(st.session_state.library) > 0:
-            st.markdown("#### Citation Relationships")
+            # Display top organisms
+            display_count = min(20, len(sorted_orgs))
             
-            # Build citation network
-            network = CitationNetwork()
-            for idx, paper in enumerate(st.session_state.library[:20]):
-                if isinstance(paper, dict):
-                    # Simulated citation data
-                    cited_papers = [f"paper_{(idx + i) % 20}" for i in range(1, 4)]
-                    network.add_paper(
-                        f"paper_{idx}",
-                        paper.get('title', 'Untitled')[:50],
-                        cited_papers
-                    )
-            
-            # Get central papers
-            central_papers = network.get_central_papers(10)
-            
-            st.markdown("#### Most Cited Papers")
-            for rank, (paper_id, title, citations) in enumerate(central_papers, 1):
-                st.markdown(f"{rank}. **{title}** - Cited by {citations} papers")
-            
-            # Clusters
-            clusters = network.find_research_clusters()
-            st.markdown(f"#### Research Clusters Identified: {len(clusters)}")
-            
-            for cluster_id, papers in list(clusters.items())[:5]:
-                with st.expander(f"Cluster {cluster_id} ({len(papers)} papers)"):
-                    for paper_id in papers[:5]:
-                        if paper_id in network.nodes:
-                            st.markdown(f"- {network.nodes[paper_id]['title']}")
+            for org in sorted_orgs[:display_count]:
+                with st.expander(f"🦠 {org.name} - {org.life_type.value} - {org.complexity.name}"):
+                    col1, col2, col3 = st.columns(3)
+                    
+                    with col1:
+                        st.metric("Population", f"{org.population:,}")
+                        st.metric("Intelligence", f"{org.intelligence:.2f}")
+                        st.metric("Complexity", org.complexity.value)
+                        st.metric("Generation", org.generation)
+                    
+                    with col2:
+                        st.metric("Energy", f"{org.energy:.1f}")
+                        st.metric("Fitness", f"{org.environment_fitness:.2f}")
+                        st.metric("Technology", f"{org.technological_level:.2f}")
+                        st.metric("Age", org.age)
+                    
+                    with col3:
+                        st.metric("Consciousness", f"{org.consciousness_level:.2f}")
+                        st.metric("Adaptability", f"{org.adaptability:.2f}")
+                        st.metric("Size", f"{org.size:.3f}")
+                        st.metric("Structure", org.structure_complexity)
+                    
+                    # Special abilities
+                    if org.telepathic_ability > 0:
+                        st.info(f"🧠 Telepathic Ability: {org.telepathic_ability:.2f}")
+                    if org.dimensional_awareness > 0:
+                        st.info(f"🌀 Dimensional Awareness: {org.dimensional_awareness:.2f}")
+                    if org.technological_level > 1:
+                        st.success(f"🔬 Technologically Advanced: Level {org.technological_level:.1f}")
+                    
+                    # Genome information
+                    st.markdown("**Genetic Traits:**")
+                    genes_df = pd.DataFrame([org.genome.genes]).T
+                    genes_df.columns = ["Value"]
+                    st.dataframe(genes_df, use_container_width=True)
+                    
+                    # Recent mutations
+                    if org.mutation_history:
+                        st.markdown("**Recent Mutations:**")
+                        for mutation in org.mutation_history[-5:]:
+                            st.text(f"• {mutation}")
         else:
-            st.info("Build your library to see citation network analysis")
+            st.warning("No organisms currently exist in the universe!")
     
-    with cite_tabs[3]:  # Export
-        st.markdown("### ðŸ¥ Export Bibliography")
+    with tab3:
+        st.subheader("Evolutionary Progress")
         
-        export_format = st.selectbox(
-            "Export Format",
-            ["BibTeX", "RIS", "EndNote XML", "CSV", "Plain Text"]
-        )
+        if st.session_state.universe.organisms:
+            # Create 3D scatter plot of organisms
+            org_data = []
+            for org in st.session_state.universe.organisms:
+                org_data.append({
+                    "name": org.name,
+                    "intelligence": org.intelligence,
+                    "complexity": org.complexity.value,
+                    "population": org.population,
+                    "life_type": org.life_type.value,
+                    "technology": org.technological_level,
+                    "consciousness": org.consciousness_level
+                })
+            
+            df = pd.DataFrame(org_data)
+            
+            fig = px.scatter_3d(
+                df,
+                x="intelligence",
+                y="complexity",
+                z="technology",
+                size="population",
+                color="life_type",
+                hover_name="name",
+                title="3D Evolutionary Space",
+                labels={
+                    "intelligence": "Intelligence",
+                    "complexity": "Complexity",
+                    "technology": "Technology Level"
+                }
+            )
+            fig.update_layout(template="plotly_dark", height=600)
+            st.plotly_chart(fig, use_container_width=True)
+            
+            # Evolutionary milestones
+            st.markdown("### 🏆 Evolutionary Milestones")
+            
+            milestones = []
+            for org in st.session_state.universe.organisms:
+                if org.complexity.value >= ComplexityLevel.MULTI_CELL.value:
+                    milestones.append(f"✅ Multi-cellular life achieved by {org.name}")
+                if org.complexity.value >= ComplexityLevel.INTELLIGENT.value:
+                    milestones.append(f"🧠 Intelligence emerged in {org.name}")
+                if org.complexity.value >= ComplexityLevel.TRANSCENDENT.value:
+                    milestones.append(f"⚡ {org.name} has transcended biological limits!")
+                if org.technological_level > 5:
+                    milestones.append(f"🔬 {org.name} developed advanced technology")
+                if org.life_type == LifeType.MACHINE:
+                    milestones.append(f"🤖 Machine life emerged: {org.name}")
+            
+            unique_milestones = list(set(milestones))[:10]
+            for milestone in unique_milestones:
+                st.success(milestone)
+            
+            if not unique_milestones:
+                st.info("No major evolutionary milestones yet. Keep evolving!")
         
-        if st.session_state.references:
-            if st.button("Generate Export File"):
-                # Generate export content
-                if export_format == "BibTeX":
-                    export_content = ""
-                    for idx, ref in enumerate(st.session_state.references):
-                        export_content += f"""@article{{ref{idx},
-  author = {{{ref['authors']}}},
-  title = {{{ref['title']}}},
-  journal = {{{ref['journal']}}},
-  year = {{{ref['year']}}},
-  volume = {{{ref['volume']}}},
-  pages = {{{ref['pages']}}}
-}}
+        # Complexity progression
+        if len(st.session_state.history) > 1:
+            st.markdown("### 📊 Complexity Progression")
+            history_df = pd.DataFrame(st.session_state.history)
+            
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(
+                x=history_df['generation'],
+                y=history_df['max_complexity'],
+                mode='lines+markers',
+                name='Max Complexity',
+                line=dict(color='#f093fb', width=4),
+                marker=dict(size=8)
+            ))
+            
+            # Add complexity level annotations
+            complexity_names = {i: name for i, name in enumerate([
+                "Primordial", "Single Cell", "Multi Cell", "Simple Organism",
+                "Complex Organism", "Intelligent", "Advanced", "Transcendent", "Cosmic", "Omnipotent"
+            ])}
+            
+            for level, name in complexity_names.items():
+                fig.add_hline(y=level, line_dash="dash", line_color="gray", 
+                            annotation_text=name, annotation_position="right")
+            
+            fig.update_layout(
+                title="Journey Through Complexity",
+                xaxis_title="Generation",
+                yaxis_title="Complexity Level",
+                template="plotly_dark",
+                height=500
+            )
+            st.plotly_chart(fig, use_container_width=True)
+    
+    with tab4:
+        st.subheader("Environmental Conditions")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("### 🌡️ Physical Parameters")
+            env = st.session_state.universe.environment
+            
+            st.metric("Temperature", f"{env.temperature:.1f} K")
+            st.metric("Pressure", f"{env.pressure:.2f} atm")
+            st.metric("Gravity", f"{env.gravity:.2f} g")
+            st.metric("Radiation Level", f"{env.radiation_level:.2f}")
+            st.metric("Magnetic Field", f"{env.magnetic_field:.2f}")
+            st.metric("Water Availability", f"{env.water_availability*100:.1f}%")
+        
+        with col2:
+            st.markdown("### 🌊 Atmospheric Composition")
+            
+            atm_data = pd.DataFrame([env.atmospheric_composition]).T
+            atm_data.columns = ["Percentage"]
+            
+            fig = px.bar(
+                atm_data,
+                y=atm_data.index,
+                x="Percentage",
+                orientation='h',
+                title="Atmospheric Gases",
+                color="Percentage",
+                color_continuous_scale="Viridis"
+            )
+            fig.update_layout(template="plotly_dark", height=400)
+            st.plotly_chart(fig, use_container_width=True)
+        
+        # Environmental suitability
+        st.markdown("### 🎯 Environmental Suitability")
+        
+        if st.session_state.universe.organisms:
+            avg_fitness = np.mean([o.environment_fitness for o in st.session_state.universe.organisms])
+            
+            fig = go.Figure(go.Indicator(
+                mode="gauge+number+delta",
+                value=avg_fitness * 100,
+                title={'text': "Average Organism Fitness"},
+                delta={'reference': 70},
+                gauge={
+                    'axis': {'range': [None, 100]},
+                    'bar': {'color': "#667eea"},
+                    'steps': [
+                        {'range': [0, 30], 'color': "#ff6b6b"},
+                        {'range': [30, 70], 'color': "#feca57"},
+                        {'range': [70, 100], 'color': "#1dd1a1"}
+                    ],
+                    'threshold': {
+                        'line': {'color': "white", 'width': 4},
+                        'thickness': 0.75,
+                        'value': 90
+                    }
+                }
+            ))
+            fig.update_layout(template="plotly_dark", height=300)
+            st.plotly_chart(fig, use_container_width=True)
+    
+    with tab5:
+        st.subheader("Recent Events")
+        
+        # Show recent mutations and events from organisms
+        all_events = []
+        for org in st.session_state.universe.organisms:
+            if org.mutation_history:
+                for mutation in org.mutation_history[-3:]:
+                    all_events.append({
+                        "Generation": st.session_state.generation,
+                        "Organism": org.name,
+                        "Event": mutation,
+                        "Type": "Mutation"
+                    })
+        
+        # Add system events
+        if st.session_state.generation % 100 == 0:
+            all_events.append({
+                "Generation": st.session_state.generation,
+                "Organism": "System",
+                "Event": f"Century milestone reached! Universe age: {st.session_state.generation}",
+                "Type": "Milestone"
+            })
+        
+        if all_events:
+            events_df = pd.DataFrame(all_events[-50:])  # Last 50 events
+            st.dataframe(events_df, use_container_width=True, height=400)
+        else:
+            st.info("No events yet. Start the simulation to see life evolve!")
+        
+        # Universe statistics summary
+        st.markdown("### 📈 Universe Summary")
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.metric(
+                "Extinction Events",
+                st.session_state.universe.extinction_events,
+                help="Number of species that have gone extinct"
+            )
+        
+        with col2:
+            st.metric(
+                "Evolutionary Leaps",
+                st.session_state.universe.evolutionary_leaps,
+                help="Major evolutionary transitions"
+            )
+        
+        with col3:
+            total_biomass = sum(o.population * o.mass for o in st.session_state.universe.organisms)
+            st.metric(
+                "Total Biomass",
+                f"{total_biomass:.2f}",
+                help="Combined mass of all organisms"
+            )
+    
+    # Footer with fun facts
+    st.markdown("---")
+    st.markdown("""
+    <div style='text-align: center; color: #888;'>
+        <p>🌌 Universe Sandbox AI - Watch Evolution Unfold 🌌</p>
+        <p>From simple cells to cosmic entities - witness the infinite possibilities of life</p>
+    </div>
+    """, unsafe_allow_html=True)
 
-"""
-                elif export_format == "Plain Text":
-                    export_content = "\n\n".join([
-                        f"{ref['authors']} ({ref['year']}). {ref['title']}. {ref['journal']}, {ref['volume']}, {ref['pages']}."
-                        for ref in st.session_state.references
-                    ])
-                else:
-                    export_content = json.dumps(st.session_state.references, indent=2)
-                
-                st.download_button(
-                    label=f"ðŸ¥ Download {export_format}",
-                    data=export_content,
-                    file_name=f"bibliography.{export_format.lower().replace(' ', '_')}",
-                    mime="text/plain"
+# Additional variables needed for function calls
+reproductive_rate_base = population_growth_rate{organism.name} went extinct")
+                continue
+        
+        # Reproduction
+        reproduction_chance = organism.reproductive_rate * population_growth_rate * fitness
+        if random.random() < reproduction_chance and organism.population < carrying_capacity:
+            # Create offspring
+            offspring_count = int(organism.population * reproduction_chance * 0.1)
+            organism.population += offspring_count
+            
+            # Chance for speciation
+            if random.random() < speciation_rate:
+                new_org = Organism(
+                    id=len(new_organisms) + len(organisms) + 1,
+                    name=f"Descendant_{organism.id}_{organism.generation}",
+                    life_type=organism.life_type,
+                    complexity=organism.complexity,
+                    genome=Genome(
+                        dna_length=organism.genome.dna_length,
+                        mutation_rate=organism.genome.mutation_rate,
+                        genes=organism.genome.genes.copy(),
+                        epigenetic_factors=organism.genome.epigenetic_factors.copy(),
+                        horizontal_transfer_rate=organism.genome.horizontal_transfer_rate
+                    ),
+                    traits=organism.traits.copy(),
+                    age=0,
+                    generation=organism.generation + 1,
+                    population=offspring_count,
+                    energy=organism.energy,
+                    intelligence=organism.intelligence,
+                    adaptability=organism.adaptability,
+                    reproductive_rate=organism.reproductive_rate,
+                    mutation_history=[],
+                    ancestors=[organism.id],
+                    environment_fitness=organism.environment_fitness,
+                    technological_level=organism.technological_level,
+                    consciousness_level=organism.consciousness_level,
+                    size=organism.size,
+                    mass=organism.mass,
+                    structure_complexity=organism.structure_complexity,
+                    aggression=organism.aggression,
+                    cooperation=organism.cooperation,
+                    exploration_drive=organism.exploration_drive,
+                    telepathic_ability=organism.telepathic_ability,
+                    dimensional_awareness=organism.dimensional_awareness,
+                    quantum_coherence=organism.quantum_coherence,
+                    energy_efficiency=organism.energy_efficiency,
+                    resource_gathering=organism.resource_gathering,
+                    temperature_tolerance=organism.temperature_tolerance,
+                    pressure_tolerance=organism.pressure_tolerance,
+                    radiation_resistance=organism.radiation_resistance
                 )
                 
-                st.code(export_content[:500] + "...", language="text")
-        else:
-            st.info("No references to export")
-
-elif st.session_state.current_tool == "ðŸŠ History":
-    st.markdown("## ðŸŠ Research History & Timeline")
-    st.markdown("Track your research journey and activity over time")
+                # Mutate offspring
+                mutations = mutate_organism(new_org, params)
+                if mutations:
+                    events.append(f"New species formed: {new_org.name}")
+                    new_organisms.append(new_org)
+        
+        # Regular mutations for existing organism
+        mutations = mutate_organism(organism, params)
+        if mutations:
+            events.extend([f"{organism.name}: {m}" for m in mutations[:3]])  # Limit event spam
+        
+        new_organisms.append(organism)
     
-    # Time range selector
-    col_time1, col_time2 = st.columns(2)
-    with col_time1:
-        time_range = st.selectbox("Time Range", ["Last 7 Days", "Last 30 Days", "Last 3 Months", "Last Year", "All Time"])
-    with col_time2:
-        activity_filter = st.multiselect("Activity Type", ["Searches", "Papers Saved", "Notes", "Projects"])
+    # Catastrophic events
+    if random.random() < asteroid_impact_frequency * 0.01:
+        events.append("🌠 ASTEROID IMPACT! Mass extinction event!")
+        new_organisms = [o for o in new_organisms if random.random() < 0.1]
     
-    # Activity timeline
-    st.markdown("### ðŸ… Activity Timeline")
-    
-    timeline_activities = []
-    
-    # Searches
-    if not activity_filter or "Searches" in activity_filter:
-        for search in st.session_state.search_history[-50:]:
-            timeline_activities.append({
-                
-                "type": "🔍 Search",
-                "description": search['query'][:60],
-                "timestamp": search['timestamp'],
-                "data": search
-            })
-    
-    # Papers
-    if not activity_filter or "Papers Saved" in activity_filter:
-        for paper in st.session_state.library[-50:]:
-            if isinstance(paper, dict) and 'date' in paper:
-                timeline_activities.append({ 
-                    "type": "📄 Paper",
-                    "description": paper.get('title', 'Untitled')[:60],
-                    "timestamp": paper['date'] + " 00:00:00",
-                    "data": paper
-                })
-    
-    # Notes
-    if not activity_filter or "Notes" in activity_filter:
-        for note in st.session_state.notes[-50:]:
-            timeline_activities.append({
-                
-                "type": "📝 Note",
-                "description": note.get('title', 'Untitled')[:60],
-                "timestamp": note['date'],
-                "data": note
-            })
-    
-    # Projects
-    if not activity_filter or "Projects" in activity_filter:
-        for project in st.session_state.projects:
-            timeline_activities.append({
-                
-                "type": "🔬 Project",
-                "description": project['name'][:60],
-                "timestamp": project['created'] + " 00:00:00",
-                "data": project
-            })
-    
-    # Sort by timestamp
-    timeline_activities.sort(key=lambda x: x['timestamp'], reverse=True)
-    
-    # Display timeline
-    for activity in timeline_activities[:50]:
-        st.markdown(f"""
-        <div class="timeline-item">
-            <strong>{activity['type']}</strong>: {activity['description']}
-            <br><small>ðŸ•' {activity['timestamp']}</small>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    # Statistics
-    st.markdown("---")
-    st.markdown("### ðŸŠ Activity Statistics")
-    
-    col_s1, col_s2, col_s3, col_s4 = st.columns(4)
-    with col_s1:
-        st.metric("Total Searches", len(st.session_state.search_history))
-    with col_s2:
-        st.metric("Papers Saved", len(st.session_state.library))
-    with col_s3:
-        st.metric("Notes Created", len(st.session_state.notes))
-    with col_s4:
-        st.metric("Projects Started", len(st.session_state.projects))
-
-else:
-    # Default view for other tools
-    st.markdown(f"## {st.session_state.current_tool}")
-    st.info(f"The {st.session_state.current_tool} feature is under development. More functionality coming soon!")
-    
-    # Show some generic content based on tool
-    if "Explore" in st.session_state.current_tool: # 🌐
-        st.markdown("### 🌐 Explore Scientific Discoveries")
-        st.markdown("- Browse trending papers")
-        st.markdown("- Discover research topics")
-        st.markdown("- Follow research areas")
-    
-    elif "Subscription" in st.session_state.current_tool: # 📋
-        st.markdown("### 📋 Manage Your Subscriptions")
-        st.markdown("- Subscribe to journals")
-        st.markdown("- Get alerts for new papers")
-        st.markdown("- Follow researchers")
-    
-    elif "Scholars" in st.session_state.current_tool: # 👨‍🎓
-        st.markdown("### 👨‍🎓 Scholar Profiles")
-        st.markdown("- View researcher profiles")
-        st.markdown("- Track publications")
-        st.markdown("- Analyze research impact")
-    
-    elif "Knowledge Base" in st.session_state.current_tool: # 📖
-        st.markdown("### 📖 Scientific Knowledge Base")
-        st.markdown("- Access curated knowledge")
-        st.markdown("- Learn scientific concepts")
-        st.markdown("- Explore methodologies")
-    
-    elif "Practice" in st.session_state.current_tool: # 🎯
-        st.markdown("### 🎯 Research Practice Tools")
-        st.markdown("- Practice problem solving")
-        st.markdown("- Test your knowledge")
-        st.markdown("- Improve research skills")
-    
-    elif "Uni-Lab" in st.session_state.current_tool: # 🛠️
-        st.markdown("### 🛠️ Universal Laboratory")
-        st.markdown("- Virtual experiments")
-        st.markdown("- Simulation tools")
-        st.markdown("- Lab protocols")
-    
-    elif "Computation" in st.session_state.current_tool: # 💾
-        st.markdown("### 💾 Computational Tools")
-        st.markdown("- Data analysis")
-        st.markdown("- Statistical computing")
-        st.markdown("- Machine learning models")
-
-# Display Bohrium Philosophy from markdown file
-st.markdown("---")
-try:
-    with open("bohrium_philosophy.md", "r", encoding="utf-8") as f:
-        philosophy_md = f.read()
-    st.markdown(philosophy_md, unsafe_allow_html=True)
-except FileNotFoundError:
-    st.warning("Could not find bohrium_philosophy.md file.")
-
-# Footer
-st.markdown("---")
-col_f1, col_f2, col_f3 = st.columns(3)
-with col_f1:
-    if st.button("ðŸ'¾ Save Progress", use_container_width=True):
-        save_state()
-with col_f2:
-    if st.button("ðŸ„ Reset Session", use_container_width=True):
-        if st.checkbox("Confirm reset"):
-            for key in list(st.session_state.keys()):
-                del st.session_state[key]
-            st.rerun()
-with col_f3:
-    if st.button("ðŸ§ Settings", use_container_width=True):
-        st.info("Settings panel coming soon")
-
-st.markdown("""
-<div style="text-align: center; padding: 20px; color: rgba(180, 200, 190, 0.7);">
-    <p>Bohrium - The Universal Instrument for Scientific Discovery</p>
-    <p>Powered by Gemini AI | Built with Streamlit</p>
-</div>
-""", unsafe_allow_html=True)
+    if random.random() < pandemic_frequency * 0.01 and len(new_organisms) > 0:
+        victim = random.choice(new_organisms)
+        victim.population = int(victim.population * 0.3)
+        events.append(f"
