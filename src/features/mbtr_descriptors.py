@@ -1,1 +1,2 @@
-def compute_mbtr(): pass
+def compute_mbtr(atoms):
+    pass
