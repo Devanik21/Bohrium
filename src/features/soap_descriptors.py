@@ -1,1 +1,2 @@
-def compute_soap(): pass
+def compute_soap(atoms):
+    pass
